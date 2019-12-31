@@ -1,7 +1,7 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 local static_table = require("utility").static_table
-local dump = require("utility").dump
+local constrain = require("utility").constrain
 
 local HELLO_MSG = "Hello!"
 local WORLD_MSG = "What up world!"
@@ -12,6 +12,23 @@ local WORLD_MSG = "What up world!"
 		assert.are.equal("{\n    {\n        1 = true\n        2 = false\n    }\n}", dump({ { true, false } }))
 	end)
 end) ]]
+
+describe("table.constrain", function()
+	it("takes a table to inspect, a table of rules, and two booleans", function()
+		assert.has_error(function() constrain(nil, {}, nil, true) end)
+		assert.has_error(function() constrain({}, nil, nil, true) end)
+		assert.has_error(function() constrain({}, {}, "hello", true) end)
+		assert.has_error(function() constrain({}, {}, nil, "hello") end)
+		assert.has_error(function() constrain({}, {}) end)
+	end)
+
+	it("constrains the keys within a table to meet specific requirements", function()
+		assert.has_error(function() constrain({hello = "world"}, {{"hello", "boolean"}}) end)
+		assert.has_no.error(function() constrain({hello = "world"}, {{"hello", "string"}}) end)
+		assert.has_error(function() constrain({hello = "world", world = "hello"}, {{"hello", "string"}}) end)
+		assert.has_no.error(function() constrain({hello = "world"}, {{"world", "string", required = false}}, false) end)
+	end)
+end)
 
 describe("static_table", function()
 	local function real_tbl()

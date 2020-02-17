@@ -1,17 +1,65 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
-local static_table = require("utility").static_table
+
+local copy = require("utility").copy
+local contains = require("utility").contains
+local count = require("utility").count
+local foreach = require("utility").foreach
 local constrain = require("utility").constrain
+local static_table = require("utility").static_table
+local enforce_types = require("utility").enforce_types
 
 local HELLO_MSG = "Hello!"
 local WORLD_MSG = "What up world!"
 
---[[ describe("dump", function()
-	it("converts tables to string", function()
-		assert.are.equal("{\n    1 = true\n    2 = false\n}", dump({ true, false }))
-		assert.are.equal("{\n    {\n        1 = true\n        2 = false\n    }\n}", dump({ { true, false } }))
+describe("table.copy", function()
+	it("returns a deep copy of a table including any metatables", function()
+		assert.has_error(function() copy(true) end)
+		assert.has_no.error(function() copy(true, true) end)
+		assert.are.same(copy({hello = true}), {hello = true})
+		assert.are.same(copy({{another = "world"}}), {{another = "world"}})
+
+		local tbl = {}
+		local mt = {
+			__index = function()
+				return "Hi!"
+			end
+		}
+		setmetatable(tbl, mt)
+
+		assert.are.same(copy(tbl), tbl)
+		assert.are.same(getmetatable(copy(tbl)), mt)
 	end)
-end) ]]
+end)
+
+describe("table.contains", function()
+	it("returns index if an array-equivalent table contains some value", function()
+		local tbl = {"hello", 10, true}
+		assert.are.equal(2, contains(tbl, 10))
+		assert.falsy(contains(tbl, 109))
+	end)
+end)
+
+describe("table.count", function()
+	it("returns the number of items in a table", function()
+		assert.are.equal(2, count({10, 83}))
+		assert.are.equal(0, count({}))
+		assert.are.equal(3, count({5, hello = false, "Hello"}))
+	end)
+end)
+
+describe("table.foreach", function()
+	it("executes a function for every item in a table", function()
+		local tbl = {"Hello,", "how", "are", "you?"}
+		local output = ""
+
+		foreach(tbl, function(item)
+			output = output .. (output == "" and "" or " ") .. item
+		end)
+
+		assert.are.equal(table.concat(tbl, " "), output)
+	end)
+end)
 
 describe("table.constrain", function()
 	it("takes a table to inspect, a table of rules, and two booleans", function()
@@ -26,7 +74,35 @@ describe("table.constrain", function()
 		assert.has_error(function() constrain({hello = "world"}, {{"hello", "boolean"}}) end)
 		assert.has_no.error(function() constrain({hello = "world"}, {{"hello", "string"}}) end)
 		assert.has_error(function() constrain({hello = "world", world = "hello"}, {{"hello", "string"}}) end)
-		assert.has_no.error(function() constrain({hello = "world"}, {{"world", "string", required = false}}, false) end)
+		assert.has_error(function() constrain({hello = "world"}, {{"enable", "boolean"}}, false) end)
+		assert.has_error(function() constrain({hello = "world"}, {{"world", "string"}, {"enable", "boolean"}}) end)
+		assert.has_no.error(function()
+			constrain({hello = "world"}, {{"hello", "string"}, {"optional", "boolean", required = false}})
+		end)
+
+		-- Confirm that missing keys error message is correct
+		assert.has_error(function() constrain({}, {{"hello", "string"}}) end,
+			"libuix->table.constrain: key(s) (hello: string) are required")
+	end)
+end)
+
+describe("enforce_types", function()
+	local function test_func(name, verbose)
+		enforce_types({"string", "boolean?"}, name, verbose)
+	end
+
+	it("utilizes table.constrain to check types of function arguments", function()
+		assert.has_no.error(function() test_func("John Doe") end)
+		assert.has_no.error(function() test_func("John Doe", true) end)
+		assert.has_no.error(function() enforce_types(true, {"string"}, "Hello") end)
+		assert.has_error(function() test_func(81) end, "libuix->enforce_types: argument #1 must be a string (found '81')")
+		assert.has_error(function() test_func("John Doe", 15) end,
+			"libuix->enforce_types: argument #2 must be a boolean (found '15')")
+		assert.has_error(function() test_func(nil, 15) end, "libuix->enforce_types: argument #1 is required")
+		assert.has_error(function() enforce_types({"string", "number"}, "Hello") end,
+			"libuix->enforce_types: argument #2 is required")
+		assert.has_error(function() enforce_types({"string"}, "Hello", 85) end,
+			"libuix->enforce_types: found 2 argument(s) and only 1 rule(s)")
 	end)
 end)
 

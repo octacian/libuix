@@ -1,30 +1,34 @@
+---------------------
+-- Table Utilities --
+---------------------
+
 if not table.copy then
 	-- Returns a deep copy of a table including metatables.
-	function table.copy(original, ignore_type, tbl_index)
+	function table.copy(original, ignore_type, _tbl_index)
 		if not ignore_type then
 			assert(type(original) == "table", "table.copy: argument must be a table. " .. debug.traceback())
 		end
 
-		if not tbl_index then tbl_index = {} end
+		if not _tbl_index then _tbl_index = {} end
 
 		local copy
 		if type(original) == "table" then
 			copy = {}
 			for key, value in pairs(original) do
 				local value_type = type(value)
-				if value_type ~= "table" or not table.contains(tbl_index, tostring(value)) then
+				if value_type ~= "table" or not table.contains(_tbl_index, tostring(value)) then
 					if value_type == "table" then
 						--print("Copying " .. tostring(value))
-						table.insert(tbl_index, tostring(value))
+						table.insert(_tbl_index, tostring(value))
 					end
 
-					copy[table.copy(key, true, tbl_index)] = table.copy(value, true, tbl_index)
+					copy[table.copy(key, true, _tbl_index)] = table.copy(value, true, _tbl_index)
 				end
 			end
 
 			-- Handle metatables
 			local mt = getmetatable(original); if mt then
-				setmetatable(copy, table.copy(mt, true, tbl_index))
+				setmetatable(copy, table.copy(mt, true, _tbl_index))
 			end
 		else
 			copy = original
@@ -34,6 +38,7 @@ if not table.copy then
 	end
 end
 
+-- Returns index if an array-equivalent table contains some value.
 function table.contains(tbl, value)
 	for index, tbl_value in ipairs(tbl) do
 		if tbl_value == value then
@@ -42,12 +47,14 @@ function table.contains(tbl, value)
 	end
 end
 
+-- Returns the number of items in a table.
 function table.count(tbl)
 	local count = 0
 	for _ in pairs(tbl) do count = count + 1 end
 	return count
 end
 
+-- Executes a function for every item in a table, passing the item as an argument.
 function table.foreach(tbl, func)
 	for _, item in pairs(tbl) do
 		local retval = func(item)
@@ -93,11 +100,6 @@ local function validate_rules(rules, verbose)
 	end
 end
 
--- Enforces a specific set of types for function arguments.
-local function enforce_types(rules, verbose, ...)
-	table.constrain(arg, rules, verbose)
-end
-
 -- Constrains the keys within a table to meet specific requirements. Unless strict is false, an error is thrown if any
 -- keys are found that are not in the rules table. If verbose is true a string representation of the table and rules is
 -- included in the error message.
@@ -117,11 +119,12 @@ function table.constrain(tbl, rules, strict, verbose)
 		error_postfix = "; table = " .. dump(tbl) .. "; rules = " .. dump(rules) .. " strict = " .. tostring(strict)
 	end
 
-	assert(type(tbl) == "table", error_prefix .. ("'tbl' argument (no. 1) must be a table (found %s)"):format(type(tbl)))
+	assert(type(tbl) == "table", error_prefix .. ("'tbl' argument (no. 1) must be a table (found %s)"):format(type(tbl))
+		.. error_postfix)
 	assert(strict == nil or type(strict) == "boolean", error_prefix .. ("'strict' argument must be a boolean (found %s)")
-		:format(type(strict)))
+		:format(type(strict)) .. error_postfix)
 	assert(verbose == nil or type(verbose) == "boolean", error_prefix .. ("'verbose' argument must be a boolean (found %s)"
-		):format(type(verbose)))
+		):format(type(verbose)) .. error_postfix)
 
 	-- Validate rules
 	validate_rules(rules, verbose)
@@ -130,7 +133,7 @@ function table.constrain(tbl, rules, strict, verbose)
 	for key, value in pairs(tbl) do
 		local rule = get_rule(key)
 		-- if no rule exists for this key and strict mode hasn't been disabled, error
-		if not rule and strict ~= false then
+		if not rule and strict ~= true then
 			error(error_prefix .. ("key '%s' is not allowed in strict mode"):format(key) .. error_postfix)
 		end
 
@@ -139,7 +142,7 @@ function table.constrain(tbl, rules, strict, verbose)
 			local value_type = type(value)
 			-- if the type is controlled and it is not valid, error
 			if rule[2] and value_type ~= rule[2] then
-				error(error_prefix .. ("key '%s' must be of type %s (found %s)"):format(key, rule[2], value_type))
+				error(error_prefix .. ("key '%s' must be of type %s (found %s)"):format(key, rule[2], value_type) .. error_postfix)
 			end
 		end
 	end
@@ -148,8 +151,8 @@ function table.constrain(tbl, rules, strict, verbose)
 	if table.count(rules) > table.count(tbl) then
 		local missing_keys = ""
 		for _, rule in ipairs(rules) do
-			if rule.required then
-				missing_keys = missing_keys .. (rule[2] == nil and "" or rule[2] .. " ") .. rule[1] .. ", "
+			if rule.required ~= false and not tbl[rule[1]] then
+				missing_keys = missing_keys .. "(" .. rule[1] .. (rule[2] == nil and "" or ": " .. rule[2]) .. "), "
 			end
 		end
 
@@ -157,6 +160,65 @@ function table.constrain(tbl, rules, strict, verbose)
 			missing_keys = missing_keys:sub(1, -3)
 			error(error_prefix .. "key(s) " .. missing_keys .. " are required" .. error_postfix)
 		end
+	end
+end
+
+-- Enforces a specific set of types for function arguments. `types` is an array-equivalent and should include then names
+-- of valid types. Arguments may be made optional by appending `?` (a question mark) to the type name. `verbose` enables
+-- detailed error messages and is itself optional. Arguments to check are passed to the end of the function. The order
+-- of items in `types` corresponds to the order of the function arguments.
+local function enforce_types(verbose, rules, ...)
+	local args = table.copy(arg)
+	args.n = nil
+	if type(verbose) == "table" then
+		table.insert(args, 1, rules)
+		rules = verbose
+		verbose = false
+	end
+
+	local error_prefix = "libuix->enforce_types: "
+	local error_postfix = ""
+	if verbose then
+		error_postfix = "; rules = " .. dump(rules) .. "; arguments = " .. dump(args)
+	end
+
+	-- Check if argument is required
+	local function is_required(rule)
+		local required = true
+		-- Check for optional marker
+		if rule:sub(-1, -1) == "?" then
+			required = false
+			rule = rule:sub(0, -2)
+		end
+
+		return rule, required
+	end
+
+	-- Check rules
+	for key, raw_rule in ipairs(rules) do
+		-- Validate rule structure
+		assert(type(key) == "number", error_prefix .. ("table must be array-equivalent, only numbers may be used as rule " ..
+			"keys (found %s '%s')"):format(type(key), key))
+		assert(type(raw_rule) == "string", error_prefix .. ("expected rules value to be a string (found rules[%s] = '%s')")
+			:format(key, raw_rule))
+
+		local value = args[key]
+		local rule, required = is_required(raw_rule)
+
+		-- if the argument is required and nil, error
+		if required and value == nil then
+			error(error_prefix .. ("argument #%d is required"):format(key) .. error_postfix)
+		-- elseif the argument is not nil and does not match the rule, error
+		elseif value ~= nil and type(value) ~= rule then
+			error(error_prefix .. ("argument #%d must be a %s (found '%s')"):format(key, rule, dump(value))
+				.. error_postfix)
+		end
+	end
+
+	-- if there are more arguments than rules, error
+	if table.count(args) > table.count(rules) then
+		error(error_prefix .. ("found %d argument(s) and only %d rule(s)"):format(table.count(args), table.count(rules))
+			.. error_postfix)
 	end
 end
 
@@ -196,42 +258,10 @@ if not _G["dump"] then
 			return tostring(val)
 		end
 	end
-
---[[ 	-- Converts non-string types to strings, returning the result.
-	function dump(value, force_index, indent)
-		indent = indent or 0
-		local indentstr = (" "):rep(indent)
-
-		local value_type = type(value)
-		if value_type == "string" then
-			return indentstr .. '"' .. value .. '"'
-		elseif value_type == "table" then
-			local output = "{\n"
-			indent = indent + 4
-			indentstr = (" "):rep(indent)
-
-			for key, item in pairs(value) do
-				if type(item) == "table" then
-					output = output .. ("%s = {\n%s\n%s}"):format(key, dump(item, force_index, indent), indentstr)
-				else
-					output = output .. ("%s%s = %s\n"):format(indentstr, key, dump(item, force_index))
-				end
-			end
-
-			output = output .. "}"
-
-			return output
-		else
-			return indentstr .. tostring(value)
-		end
-	end ]]
 end
 
-----------------------------
--- Static Table Generator --
-----------------------------
-
-function static_table(table, meta, ctrl)
+-- Modifies the metatable of a table to make it read-only or to otherwise control access.
+local function static_table(table, meta, ctrl)
 	if not meta then meta = {} end
 
 	local abstract = {}
@@ -275,8 +305,12 @@ function static_table(table, meta, ctrl)
 end
 
 return {
-	static_table = static_table,
-	dump = dump,
+	copy = table.copy,
+	contains = table.contains,
+	count = table.count,
+	foreach = table.foreach,
+	constrain = table.constrain,
 	enforce_types = enforce_types,
-	constrain = table.constrain
+	dump = dump,
+	static_table = static_table
 }

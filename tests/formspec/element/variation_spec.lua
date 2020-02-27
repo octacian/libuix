@@ -2,6 +2,8 @@ package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
 local Variation = require("formspec/element/variation")
+local Model = require("formspec/model")
+
 local Example = Variation:new("variation_spec", {
 	{ "x",  "number", separator = "," },
 	{ "name", "string" },
@@ -26,7 +28,7 @@ describe("Variation", function()
 	describe("validate", function()
 		it("checks the types of the values of definition fields", function()
 			assert.has_no.errors(function() instance:validate() end)
-			assert.has_error(function() Example({ 20, name = true, 32 }):validate() end)
+			assert.has_error(function() Example({ 20, name = true, 32 }):validate() end)--, "")
 			assert.has_error(function() Example({ false, name = "Ayo", 32 }):validate() end)
 			assert.has_error(function() Example({ false, name = 20, "Woah" }):validate() end)
 		end)
@@ -43,6 +45,12 @@ describe("Variation", function()
 
 		it("inserts extra separators for optional fields", function()
 			assert.are.equal("variation_spec[20,Will this break?;]", Example({ 20, name = "Will this break?" }):render())
+		end)
+
+		it("obeys visibility rules", function()
+			assert.are.equal("", Example({20, name = "Invisible", _if = "show"}):render(Model:new {show = false}))
+			assert.are.equal("variation_spec[20,Visible;]",
+				Example({20, name = "Visible", _if = "show"}):render(Model:new {show = true}))
 		end)
 	end)
 

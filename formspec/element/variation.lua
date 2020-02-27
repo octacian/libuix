@@ -1,4 +1,4 @@
-dofile(modpath.."/utility.lua")
+local utility = dofile(modpath.."/utility.lua")
 
 ---------------------
 -- Variation Class --
@@ -9,6 +9,8 @@ Variation.__index = Variation
 
 -- Creates a new instance of the variation.
 function Variation:new(name, fields, options)
+	utility.enforce_types({"string", "table", "table?"}, name, fields, options)
+
 	local instance = {
 		name = name,
 		fields = fields,
@@ -22,6 +24,7 @@ end
 -- Returns a new instance of the variation, populated with its name, fields,
 -- options, and now its definition and, in some cases, elements list.
 function Variation:__call(def, elements)
+	utility.enforce_types({"table", "table?"}, def, elements)
 	local instance = Variation:new(self.name, self.fields, self.options)
 	instance.def = def
 	instance.cache = {}
@@ -74,12 +77,14 @@ end
 
 -- Validates a definition table to variation constraints.
 function Variation:validate()
-	--print("validate got self.def: " .. dump(self.def) .. " allowed fields: " .. dump(self.fields))
+	local internal_properties = {"_if"}
+
 	local field_map = self:map_fields(self.def)
 	for field_key, def_key in pairs(field_map) do
-		assert(type(self.def[def_key]) == self.fields[field_key][2],
-			("validate: %s property '%s' must be a %s (found '%s')")
-			:format(self.name, self.fields[field_key][1], self.fields[field_key][2], type(self.def[def_key])))
+		if type(self.def[def_key]) ~= self.fields[field_key][2] then
+			error(("validate: %s property '%s' must be a %s (found '%s')")
+				:format(self.name, self.fields[field_key][1], self.fields[field_key][2], type(self.def[def_key])))
+		end
 	end
 
 	-- if the definition table has more entries than the field map, there is an extra key
@@ -92,7 +97,9 @@ function Variation:validate()
 
 		-- Throw error
 		for key, value in pairs(def) do
-			error(("validate: %s does not support property '%s' (has type %s)"):format(self.name, key, type(value)))
+			if not table.contains(internal_properties, key) then
+				error(("validate: %s does not support property '%s' (has type %s)"):format(self.name, key, type(value)))
+			end
 		end
 	end
 
@@ -101,8 +108,10 @@ end
 
 -- Renders the variation given a data model.
 function Variation:render(model)
+	utility.enforce_types({"table?"}, model)
+
 	-- Obey _if visibility control.
-	if self.def._if and not model._evaluate(self.def._if) then
+	if self.def._if and not model:_evaluate(self.def._if) then
 		return ""
 	end
 

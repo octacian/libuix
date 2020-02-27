@@ -9,11 +9,15 @@ describe("Model", function()
 				hello = function()
 					return true
 				end,
-				message = "What's up?"
+				message = "What's up?",
+				visible = true,
+				useful = false
 			})
 
 			assert.are.equal(true, instance:_evaluate("hello"))
 			assert.are.equal("What's up?", instance:_evaluate("message"))
+			assert.are.equal(true, instance:_evaluate("visible"))
+			assert.are.equal(false, instance:_evaluate("useful"))
 		end)
 	end)
 end)

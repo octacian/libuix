@@ -1,3 +1,4 @@
+local utility = dofile(modpath.."/utility.lua")
 local Element = dofile(modpath.."/formspec/element/element.lua")
 
 -- Default field definitions.
@@ -19,7 +20,7 @@ Builder.__index = Builder
 function Builder:new()
 	local instance = {
 		elements = {}, -- Elements manage variations; referenced by name.
-		default_fields = default_fields
+		default_fields = default_fields -- Defaults for use when defining elements
 	}
 
 	setmetatable(instance, Builder)
@@ -32,6 +33,9 @@ end
 
 -- Adds a generic element to the builder.
 function Builder:add(name, positioned, resizable, fields, options)
+	utility.enforce_types({"string", "boolean", "boolean", "table?", "table?"},
+		name, positioned, resizable, fields, options)
+
 	if not fields then fields = {} end
 
 	if positioned then

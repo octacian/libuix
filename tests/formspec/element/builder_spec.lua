@@ -33,6 +33,45 @@ describe("Builder", function()
 		it("adds a generic element with no default fields to the builder", function()
 			instance = Builder:new()
 			instance:element("builder_element", {})
+			assert.are.same({
+				builder_element = {
+					name = "builder_element",
+					variations = {
+						{
+							fields = {},
+							name = "builder_element"
+						}
+					}
+				}
+			}, instance.elements)
+		end)
+	end)
+
+	describe("positioned", function()
+		it("adds an element with default fields (x, y: number) to the builder", function()
+			instance = Builder:new()
+			instance:positioned("builder_element", {})
+			assert.are.same({instance.default_fields.x, instance.default_fields.y},
+				instance.elements.builder_element.variations[1].fields)
+		end)
+	end)
+
+	describe("resizable", function()
+		it("adds an element with default fields (w, h: number) to the builder", function()
+			instance = Builder:new()
+			instance:resizable("builder_element", {})
+			assert.are.same({instance.default_fields.w, instance.default_fields.h},
+				instance.elements.builder_element.variations[1].fields)
+		end)
+	end)
+
+	describe("rect", function()
+		it("adds an element with default fields (x, y, w, h: number) to the builder", function()
+			instance = Builder:new()
+			instance:rect("builder_element", {})
+			assert.are.same({
+				instance.default_fields.x, instance.default_fields.y, instance.default_fields.w, instance.default_fields.h
+			}, instance.elements.builder_element.variations[1].fields)
 		end)
 	end)
 end)

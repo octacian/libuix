@@ -62,124 +62,26 @@ function table.foreach(tbl, func)
 	end
 end
 
--- Validates `rules` table used by `enforce_types` and `table.constrain`. An error is raised if invalid. If verbose is
--- enabled, a stack traceback is included in the error message as well as the rules table itself.
---[[ The required rules structure is: {
-	{
-		"show", -- This is the name of a table key.
-		"boolean", -- This is the name of the type expected. If nil any type is allowed.
-		required = false, -- Overrides the default of true to make the key optional.
-	}
-} ]]
-local function validate_rules(rules, verbose)
-	local error_prefix = "libuix->validate_rules: "
-	assert(verbose == nil or type(verbose) == "boolean", error_prefix
-		.. ("'verbose' argument (no. 2) must be a boolean (found %s); %s"):format(type(verbose), debug.traceback()))
-
-	local error_postfix = ""
-	if verbose then
-		error_postfix = "; rules = " .. dump(rules) .. "; " .. debug.traceback()
-	end
-
-	assert(type(rules) == "table", error_prefix .. ("'rules' argument (no. 1) must be a table (found %s)")
-		:format(type(rules)) .. error_postfix)
-
-	assert(table.count(rules) > 0, error_prefix .. ("'rules' argument (no. 1), a table, must contain at least one rule")
-		.. error_postfix)
-
-	-- Verify that rules are valid
-	for index, rule in ipairs(rules) do
-		assert(type(rule) == "table", error_prefix .. ("rule[%d] must be a table (found %s)"):format(index, type(rule))
-			.. error_postfix)
-		assert(type(rule[1]) == "string", error_prefix .. ("rule[%d][1] must be a string (found %s)")
-			:format(index, type(rule[1])) .. error_postfix)
-		assert(rule[2] == nil or type(rule[2]) == "string", error_prefix .. ("rule[%d][2] must be a string or nil (found %s)")
-			:format(index, type(rule[2])) .. error_postfix)
-		assert(rule.required == nil or type(rule.required) == "boolean", error_prefix
-			.. ("rule[%d].required must be a boolean or nil (found %s)"):format(index, type(rule.required)) .. error_postfix)
-	end
-end
-
--- Constrains the keys within a table to meet specific requirements. Unless strict is false, an error is thrown if any
--- keys are found that are not in the rules table. If verbose is true a string representation of the table and rules is
--- included in the error message.
-function table.constrain(tbl, rules, strict, verbose)
-	-- Returns a rule by key name.
-	local function get_rule(key)
-		for _, rule in ipairs(rules) do
-			if rule[1] == key then
-				return rule
-			end
-		end
-	end
-
-	local error_prefix = "libuix->table.constrain: "
-	local error_postfix = ""
-	if verbose then
-		error_postfix = "; table = " .. dump(tbl) .. "; rules = " .. dump(rules) .. " strict = " .. tostring(strict)
-	end
-
-	assert(type(tbl) == "table", error_prefix .. ("'tbl' argument (no. 1) must be a table (found %s)"):format(type(tbl))
-		.. error_postfix)
-	assert(strict == nil or type(strict) == "boolean", error_prefix .. ("'strict' argument must be a boolean (found %s)")
-		:format(type(strict)) .. error_postfix)
-	assert(verbose == nil or type(verbose) == "boolean", error_prefix .. ("'verbose' argument must be a boolean (found %s)"
-		):format(type(verbose)) .. error_postfix)
-
-	-- Validate rules
-	validate_rules(rules, verbose)
-
-	-- Compare table to rules
-	for key, value in pairs(tbl) do
-		local rule = get_rule(key)
-		-- if no rule exists for this key and strict mode hasn't been disabled, error
-		if not rule and strict ~= true then
-			error(error_prefix .. ("key '%s' is not allowed in strict mode"):format(key) .. error_postfix)
-		end
-
-		-- if rule exists, make comparison
-		if rule then
-			local value_type = type(value)
-			-- if the type is controlled and it is not valid, error
-			if rule[2] and value_type ~= rule[2] then
-				error(error_prefix .. ("key '%s' must be of type %s (found %s)"):format(key, rule[2], value_type) .. error_postfix)
-			end
-		end
-	end
-
-	-- if the rules table contains more entries than the table we are processing, check which keys are required
-	if table.count(rules) > table.count(tbl) then
-		local missing_keys = ""
-		for _, rule in ipairs(rules) do
-			if rule.required ~= false and not tbl[rule[1]] then
-				missing_keys = missing_keys .. "(" .. rule[1] .. (rule[2] == nil and "" or ": " .. rule[2]) .. "), "
-			end
-		end
-
-		if missing_keys ~= "" then
-			missing_keys = missing_keys:sub(1, -3)
-			error(error_prefix .. "key(s) " .. missing_keys .. " are required" .. error_postfix)
-		end
-	end
-end
-
 -- Enforces a specific set of types for function arguments. `types` is an array-equivalent and should include then names
--- of valid types. Arguments may be made optional by appending `?` (a question mark) to the type name. `verbose` enables
--- detailed error messages and is itself optional. Arguments to check are passed to the end of the function. The order
--- of items in `types` corresponds to the order of the function arguments.
+-- of valid types. Arguments may be made optional by appending `?` (a question mark) to the type name. Setting `verbose`
+-- to false prevents stack traces and rule and argument dumps from being included in error messages. Arguments to check
+-- are passed to the end of the function. The order of items in `types` corresponds to the order of the function
+-- arguments passed to this function.
 local function enforce_types(verbose, rules, ...)
 	local args = table.copy(arg)
 	args.n = nil
 	if type(verbose) == "table" then
 		table.insert(args, 1, rules)
 		rules = verbose
-		verbose = false
+		verbose = true
 	end
 
 	local error_prefix = "libuix->enforce_types: "
-	local error_postfix = ""
-	if verbose then
-		error_postfix = "; rules = " .. dump(rules) .. "; arguments = " .. dump(args)
+	-- Returns the error postfix only if verbose is not disabled.
+	local function error_postfix()
+		if verbose then
+			return "; rules = " .. dump(rules) .. "; arguments = " .. dump(args) .. "\n\n" .. debug.traceback()
+		else return "" end
 	end
 
 	-- Check if argument is required
@@ -198,27 +100,126 @@ local function enforce_types(verbose, rules, ...)
 	for key, raw_rule in ipairs(rules) do
 		-- Validate rule structure
 		assert(type(key) == "number", error_prefix .. ("table must be array-equivalent, only numbers may be used as rule " ..
-			"keys (found %s '%s')"):format(type(key), key))
+			"keys (found %s '%s')"):format(type(key), key) .. error_postfix())
 		assert(type(raw_rule) == "string", error_prefix .. ("expected rules value to be a string (found rules[%s] = '%s')")
-			:format(key, raw_rule))
+			:format(key, raw_rule) .. error_postfix())
 
 		local value = args[key]
 		local rule, required = is_required(raw_rule)
 
 		-- if the argument is required and nil, error
 		if required and value == nil then
-			error(error_prefix .. ("argument #%d is required"):format(key) .. error_postfix)
+			error(error_prefix .. ("argument #%d is required"):format(key) .. error_postfix())
 		-- elseif the argument is not nil and does not match the rule, error
 		elseif value ~= nil and type(value) ~= rule then
-			error(error_prefix .. ("argument #%d must be a %s (found '%s')"):format(key, rule, dump(value))
-				.. error_postfix)
+			error(error_prefix .. ("argument #%d must be a %s (found '%s')"):format(key, rule, dump(value)) .. error_postfix())
 		end
 	end
 
 	-- if there are more arguments than rules, error
 	if table.count(args) > table.count(rules) then
 		error(error_prefix .. ("found %d argument(s) and only %d rule(s)"):format(table.count(args), table.count(rules))
-			.. error_postfix)
+			.. error_postfix())
+	end
+end
+
+-- Validates `rules` table used by `enforce_types` and `table.constrain`. An error is raised if invalid. Unless verbose
+-- is disabled, a dump of the rules table and the stack traceback is included in the error message.
+--[[ Rules Example Structure: {
+	{
+		"show", -- This is the name of a table key.
+		"boolean", -- This is the name of the type expected. If nil any type is allowed.
+		required = false, -- Overrides the default of true to make the key optional.
+	}
+} ]]
+local function validate_rules(rules, verbose)
+	enforce_types({"table", "boolean?"}, rules, verbose)
+	if verbose == nil then verbose = true end
+
+	local error_prefix = "libuix->validate_rules: "
+	-- Returns the error postfix only if verbose is not disabled.
+	local function error_postfix()
+		if verbose then
+			return "; rules = " .. dump(rules) .. "; " .. "\n\n" .. debug.traceback()
+		else return "" end
+	end
+
+	assert(table.count(rules) > 0, error_prefix .. ("'rules' argument (no. 1), a table, must contain at least one rule")
+		.. error_postfix())
+
+	-- Verify that rules are valid
+	for index, rule in ipairs(rules) do
+		assert(type(rule) == "table", error_prefix .. ("rule[%d] must be a table (found %s)"):format(index, type(rule))
+			.. error_postfix())
+		assert(type(rule[1]) == "string", error_prefix .. ("rule[%d][1] must be a string (found %s)")
+			:format(index, type(rule[1])) .. error_postfix())
+		assert(rule[2] == nil or type(rule[2]) == "string", error_prefix .. ("rule[%d][2] must be a string or nil (found %s)")
+			:format(index, type(rule[2])) .. error_postfix())
+		assert(rule.required == nil or type(rule.required) == "boolean", error_prefix
+			.. ("rule[%d].required must be a boolean or nil (found %s)"):format(index, type(rule.required)) .. error_postfix())
+	end
+end
+
+-- Constrains the keys within a table to meet specific requirements. Unless strict is false, an error is thrown if any
+-- keys are found that are not in the rules table. Unless verbose is false a dump of the target table, the rules table,
+-- and the stack traceback is included in the error message.
+function table.constrain(tbl, rules, strict, verbose)
+	enforce_types({"table", "table", "boolean?", "boolean?"}, tbl, rules, strict, verbose)
+	if verbose == nil then verbose = true end
+
+	-- Returns a rule by key name.
+	local function get_rule(key)
+		for _, rule in ipairs(rules) do
+			if rule[1] == key then
+				return rule
+			end
+		end
+	end
+
+	local error_prefix = "libuix->table.constrain: "
+	-- Returns the error postfix only if verbose is not disabled.
+	local function error_postfix()
+		if verbose then
+			return "; table = " .. dump(tbl) .. "; rules = " .. dump(rules) .. " strict mode = " .. tostring(strict) .. "\n\n"
+				.. debug.traceback()
+		else return "" end
+	end
+
+	-- Validate rules
+	validate_rules(rules, verbose)
+
+	-- Compare table to rules
+	for key, value in pairs(tbl) do
+		local rule = get_rule(key)
+		-- if no rule exists for this key and strict mode hasn't been disabled, error
+		if not rule and strict ~= true then
+			error(error_prefix .. ("key '%s' is not allowed in strict mode"):format(key) .. error_postfix())
+		end
+
+		-- if rule exists, make comparison
+		if rule then
+			local value_type = type(value)
+			-- if the type is controlled and it is not valid, error
+			if rule[2] and value_type ~= rule[2] then
+				error(error_prefix .. ("key '%s' must be of type %s (found %s)"):format(key, rule[2], value_type)
+					.. error_postfix())
+			end
+		end
+	end
+
+	-- if the rules table contains more entries than the table we are processing, check which keys are required
+	if table.count(rules) > table.count(tbl) then
+		local missing_keys = ""
+		for _, rule in ipairs(rules) do
+			if rule.required ~= false and not tbl[rule[1]] then
+				missing_keys = missing_keys .. "(" .. rule[1] .. (rule[2] == nil and "" or ": " .. rule[2]) .. "), "
+			end
+		end
+
+		if missing_keys ~= "" then
+			missing_keys = missing_keys:sub(1, -3)
+			error(error_prefix .. "key(s) " .. missing_keys .. " are required" .. error_postfix())
+		end
 	end
 end
 
@@ -303,6 +304,10 @@ local function static_table(table, meta, ctrl)
 
 	return abstract
 end
+
+-------------
+-- Exports --
+-------------
 
 return {
 	copy = table.copy,

@@ -81,14 +81,14 @@ describe("table.constrain", function()
 		end)
 
 		-- Confirm that missing keys error message is correct
-		assert.has_error(function() constrain({}, {{"hello", "string"}}) end,
+		assert.has_error(function() constrain({}, {{"hello", "string"}}, nil, false) end,
 			"libuix->table.constrain: key(s) (hello: string) are required")
 	end)
 end)
 
 describe("enforce_types", function()
 	local function test_func(name, verbose)
-		enforce_types({"string", "boolean?"}, name, verbose)
+		enforce_types(false, {"string", "boolean?"}, name, verbose)
 	end
 
 	it("utilizes table.constrain to check types of function arguments", function()
@@ -99,9 +99,9 @@ describe("enforce_types", function()
 		assert.has_error(function() test_func("John Doe", 15) end,
 			"libuix->enforce_types: argument #2 must be a boolean (found '15')")
 		assert.has_error(function() test_func(nil, 15) end, "libuix->enforce_types: argument #1 is required")
-		assert.has_error(function() enforce_types({"string", "number"}, "Hello") end,
+		assert.has_error(function() enforce_types(false, {"string", "number"}, "Hello") end,
 			"libuix->enforce_types: argument #2 is required")
-		assert.has_error(function() enforce_types({"string"}, "Hello", 85) end,
+		assert.has_error(function() enforce_types(false, {"string"}, "Hello", 85) end,
 			"libuix->enforce_types: found 2 argument(s) and only 1 rule(s)")
 	end)
 end)

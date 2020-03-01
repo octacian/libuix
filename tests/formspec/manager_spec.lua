@@ -16,17 +16,18 @@ local expected_form = {
 	elements = {
 		{
 			variations = {},
-			name = "anchor",
+			name = "label",
 			variation = {
-				name = "anchor",
+				name = "label",
 				cache = {
-					map_fields = {"x", "y"},
+					map_fields = {"x", "y", "label"},
 				},
 				fields = {
 					{"x", "number", separator = ","},
-					{"y", "number"}
+					{"y", "number"},
+					{"label", "string"}
 				},
-				def = {x = 0, y = 0}
+				def = {x = 0, y = 0, label = "Hello!"}
 			}
 		}
 	},
@@ -39,10 +40,52 @@ describe("FormspecManager", function()
 	it("collects formspec name, options, elements, and model for addition to the instance", function()
 		assert.has_no.error(function()
 			instance("manager_spec") { w = 5, h = 10 } {
-				anchor { x = 0, y = 0 }
+				label { x = 0, y = 0, label = "Hello!" }
 			} {}
 		end)
 		assert.are.same(expected_form, instance.forms[1])
+	end)
+
+	describe("formspec options include", function()
+		it("formspec_version", function()
+			(function() instance("formspec_version") {formspec_version = 2, w = 5, h = 10} {} {} end)()
+			assert.are.equal("formspec_version[2]size[5,10]real_coordinates[true]", instance:render("formspec_version"))
+		end)
+
+		it("sizing", function()
+			(function() instance("sizing") {w = 5, h = 10, fixed_size = true} {} {} end)()
+			assert.are.equal("size[5,10,true]real_coordinates[true]", instance:render("sizing"))
+			assert.has_error(function() instance("broken_sizing") {w = 5, h = "Hello!"} {} {} end)
+		end)
+
+		it("position", function()
+			(function() instance("position") {w = 5, h = 10, position = {x = 5, y = 5}} {} {} end)()
+			assert.are.equal("size[5,10]position[5,5]real_coordinates[true]", instance:render("position"))
+			assert.has_error(function() instance("broken_position") {w = 5, h = 10, position = {x = "Hello!", y = 5}} {} {} end)
+		end)
+
+		it("anchor", function()
+			(function() instance("anchor") {w = 5, h = 10, anchor = {x = 5, y = 5}} {} {} end)()
+			assert.are.equal("size[5,10]anchor[5,5]real_coordinates[true]", instance:render("anchor"))
+			assert.has_error(function() instance("broken_anchor") {w = 5, h = 10, anchor = {x = "Hello!", y = 5}} {} {} end)
+		end)
+
+		it("no_prepend", function()
+			(function()
+				instance("no_prepend") {no_prepend = true, w = 5, h = 10} {} {};
+			end)();
+			assert.are.equal("size[5,10]no_prepend[]real_coordinates[true]", instance:render("no_prepend"));
+			-- NOTE: Semicolon at the end of the previous line is necessary to prevent an ambiguous syntax error.
+			(function()
+				instance("do_prepend") {no_prepend = false, w = 5, h = 10} {} {};
+			end)();
+			assert.are.equal("size[5,10]real_coordinates[true]", instance:render("do_prepend"))
+		end)
+
+		it("real_coordinates", function()
+			(function() instance("real_coordinates") {real_coordinates = false, w = 5, h = 10} {} {} end)()
+			assert.are.equal("size[5,10]real_coordinates[false]", instance:render("real_coordinates"))
+		end)
 	end)
 
 	describe("get", function()
@@ -61,7 +104,7 @@ describe("FormspecManager", function()
 
 	describe("render", function()
 		it("returns a Minetest-compatible formspec string", function()
-			assert.are.equal("real_coordinates[true]size[5,10]anchor[0,0]", instance:render("manager_spec"))
+			assert.are.equal("size[5,10]real_coordinates[true]label[0,0;Hello!]", instance:render("manager_spec"))
 			assert.falsy(instance:render("invalid"))
 		end)
 	end)
@@ -69,7 +112,7 @@ describe("FormspecManager", function()
 	describe("show", function()
 		it("shows a formspec to an in-game player", function()
 			assert.has_no.error(function() instance:show("manager_spec", "singleplayer") end)
-			assert.are.same({"singleplayer", "unit_test:manager_spec", "real_coordinates[true]size[5,10]anchor[0,0]"},
+			assert.are.same({"singleplayer", "unit_test:manager_spec", "size[5,10]real_coordinates[true]label[0,0;Hello!]"},
 				last_show_formspec_call)
 			assert.has_error(function() instance:show("invalid", "singleplayer") end,
 				"libuix().formspec['invalid']:show: formspec does not exist or contains no elements")

@@ -7,14 +7,6 @@ local field = builder.default_fields
 -- Elements --
 --------------
 
-builder:element("formspec_version", {
-	{ "version", "number" }
-})
-
-builder:positioned("position")
-
-builder:positioned("anchor")
-
 -- TODO: Container element.
 
 builder:element("list", {

@@ -43,10 +43,19 @@ end
 function FormspecManager:add(name, options, elements, model)
 	utility.enforce_types({"string", "table", "table", "table"}, name, options, elements, model)
 	assert(not self:get_index(name), ("libuix().formspec: form '%s' already exists"):format(name))
+
 	table.constrain(options, {
+		{"formspec_version", "number", required = false},
 		{"w", "number"},
-		{"h", "number"}
+		{"h", "number"},
+		{"fixed_size", "boolean", required = false},
+		{"position", "table", required = false},
+		{"anchor", "table", required = false},
+		{"no_prepend", "boolean", required = false},
+		{"real_coordinates", "boolean", required = false}
 	})
+	if options.position then table.constrain(options.position, {{"x", "number"}, {"y", "number"}}) end
+	if options.anchor then table.constrain(options.anchor, {{"x", "number"}, {"y", "number"}}) end
 
 	table.insert(self.forms, {
 		name = name,
@@ -78,27 +87,45 @@ end
 
 -- Renders a formspec identified by name, returning a Minetest-compatible
 -- formspec string unless the name refers to a non-existent formspec.
-function FormspecManager:render(name, real_coordinates)
-	utility.enforce_types({"string", "boolean?"}, name, real_coordinates)
-
+function FormspecManager:render(name)
 	local form = self:get(name)
 	if not form then return end
 
 	local formstring = ""
-	-- TODO: Move `real_coordinates` control to formspec options
-	if real_coordinates ~= false then
-		formstring = "real_coordinates[true]"
+
+	-- Handle formspec version option
+	if form.options.formspec_version then
+		formstring = formstring .. "formspec_version[" .. tostring(form.options.formspec_version) .. "]"
 	end
 
-	formstring = formstring .. "size[" .. tostring(form.options.w) .. "," .. tostring(form.options.h)
-	if form.options.fixed_size then formstring = formstring .. ",true]"
-	else formstring = formstring .. "]" end
+	-- Handle size options
+	formstring = formstring .. ("size[%d,%d%s]"):format(form.options.w, form.options.h,
+		form.options.fixed_size and (",%s"):format(tostring(form.options.fixed_size)) or "")
 
+	-- Handle position option
+	if form.options.position then
+		formstring = formstring .. ("position[%d,%d]"):format(form.options.position.x, form.options.position.y)
+	end
+
+	-- Handle anchor option
+	if form.options.anchor then
+		formstring = formstring .. ("anchor[%d,%d]"):format(form.options.anchor.x, form.options.anchor.y)
+	end
+
+	-- Handle no prepend option
+	if form.options.no_prepend then
+		formstring = formstring .. "no_prepend[]"
+	end
+
+	-- Handle real coordinates option
+	local real_coordinates = true
+	if form.options.real_coordinates ~= nil then real_coordinates = form.options.real_coordinates end
+	formstring = formstring .. ("real_coordinates[%s]"):format(tostring(real_coordinates))
+
+	-- Render all formspec elements
 	for _, element in pairs(form.elements) do
 		formstring = formstring .. element:render(form.model)
 	end
-
-	if form.options.no_prepend then formstring = formstring .. "no_prepend[]" end
 
 	return formstring
 end

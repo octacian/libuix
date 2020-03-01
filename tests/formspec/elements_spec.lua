@@ -29,9 +29,6 @@ function test(name, expected, fields)
 	end)
 end
 
-test("formspec_version", "1", { version = 1 })
-test("position", "1,2", { x = 1, y = 2 })
-test("anchor", "2,1", { x = 2, y = 1 })
 -- TODO: container element.
 test("list", "location;name;2,3;5,5;", { inventory_location = "location", list_name = "name", x = 2, y = 3, w = 5, h = 5 })
 test("list", "location;name;2,3;5,5;0", { inventory_location = "location", list_name = "name", x = 2, y = 3, w = 5, h = 5, starting_item_index = 0 })

@@ -1,8 +1,14 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
+_G.modpath = "."
 local Model = require("formspec/model")
 
 describe("Model", function()
+	it("only accepts a table for data", function()
+		assert.has_no.error(function() Model:new({favourite_number = 10}) end)
+		assert.has_error(function() Model:new(305) end)
+	end)
+
 	describe("_evaluate", function()
 		it("evaluates whatever lies within some key to an integral, boolean-comparable type", function()
 			local instance = Model:new({

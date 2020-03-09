@@ -7,11 +7,11 @@ local utility = dofile(modpath.."/utility.lua")
 local Variation = utility.make_class("Variation")
 
 -- Creates a new instance of the variation.
-function Variation:new(name, fields, options)
-	utility.enforce_types({"string", "table", "table?"}, name, fields, options)
+function Variation:new(parent, fields, options)
+	utility.enforce_types({"Element", "table", "table?"}, parent, fields, options)
 
 	local instance = {
-		name = name,
+		parent = parent,
 		fields = fields,
 		options = options
 	}
@@ -24,7 +24,7 @@ end
 -- options, and now its definition and, in some cases, elements list.
 function Variation:__call(def, elements)
 	utility.enforce_types({"table", "table?"}, def, elements)
-	local instance = Variation:new(self.name, self.fields, self.options)
+	local instance = Variation:new(self.parent, self.fields, self.options)
 	instance.def = def
 	instance.cache = {}
 	return instance
@@ -33,7 +33,7 @@ end
 -- Maps the fields passed via the definition to their counterparts in fields.
 function Variation:map_fields()
 	if self.cache.map_fields then
-		--print("map_fields returning cached map for " .. self.name)
+		--print("map_fields returning cached map for " .. self.parent.name)
 		return self.cache.map_fields
 	end
 
@@ -63,7 +63,7 @@ function Variation:map_fields()
 		-- Ensure that the field exists in the definition
 		if self.def[field_map[index]] == nil then
 			if field.required ~= false then
-				error(("map_fields: %s property '%s' is not optional"):format(self.name, field[1]))
+				error(("map_fields: %s property '%s' is not optional"):format(self.parent.name, field[1]))
 			else
 				field_map[index] = nil
 			end
@@ -82,7 +82,7 @@ function Variation:validate()
 	for field_key, def_key in pairs(field_map) do
 		if type(self.def[def_key]) ~= self.fields[field_key][2] then
 			error(("validate: %s property '%s' must be a %s (found '%s')")
-				:format(self.name, self.fields[field_key][1], self.fields[field_key][2], type(self.def[def_key])))
+				:format(self.parent.name, self.fields[field_key][1], self.fields[field_key][2], type(self.def[def_key])))
 		end
 	end
 
@@ -97,7 +97,7 @@ function Variation:validate()
 		-- Throw error
 		for key, value in pairs(def) do
 			if not table.contains(internal_properties, key) then
-				error(("validate: %s does not support property '%s' (has type %s)"):format(self.name, key, type(value)))
+				error(("validate: %s does not support property '%s' (has type %s)"):format(self.parent.name, key, type(value)))
 			end
 		end
 	end
@@ -128,7 +128,7 @@ function Variation:render(model)
 
 	fieldstring = fieldstring:sub(1, -2)
 
-	return ("%s[%s]"):format(self.name, fieldstring)
+	return ("%s[%s]"):format(self.parent.name, fieldstring)
 end
 
 -------------

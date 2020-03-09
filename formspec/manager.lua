@@ -11,9 +11,9 @@ setmetatable(Elements, { __index = _G })
 local FormspecManager = utility.make_class("FormspecManager")
 
 -- Creates a new FormspecManager instance.
-function FormspecManager:new(modname)
-	utility.enforce_types({"string"}, modname)
-	local instance = { modname = modname, forms = {} }
+function FormspecManager:new(parent)
+	utility.enforce_types({"UIXInstance"}, parent)
+	local instance = { parent = parent, forms = {} }
 	setmetatable(instance, FormspecManager)
 	return instance
 end
@@ -137,7 +137,7 @@ function FormspecManager:show(form_name, player_name)
 	local formstring = self:render(form_name)
 	assert(formstring, ("libuix().formspec['%s']:show: formspec does not exist or contains no elements"):format(form_name))
 
-	minetest.show_formspec(player_name, self.modname .. ":" .. form_name, formstring)
+	minetest.show_formspec(player_name, self.parent.modname .. ":" .. form_name, formstring)
 end
 
 -- TODO: Handle formspec submissions.

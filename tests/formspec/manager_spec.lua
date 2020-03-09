@@ -2,6 +2,7 @@ package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
 _G.minetest = {}
+local UIXInstance = require("libuix")
 local FormspecManager = require("formspec/manager")
 
 -- show_formspec mock function
@@ -18,14 +19,20 @@ local expected_form = {
 			variations = {},
 			name = "label",
 			variation = {
-				name = "label",
+				parent = {
+					name = "label",
+					variations = {
+						{
+							fields = {
+								{"x", "number", separator = ","},
+								{"y", "number"},
+								{"label", "string"}
+							}
+						}
+					}
+				},
 				cache = {
 					map_fields = {"x", "y", "label"},
-				},
-				fields = {
-					{"x", "number", separator = ","},
-					{"y", "number"},
-					{"label", "string"}
 				},
 				def = {x = 0, y = 0, label = "Hello!"}
 			}
@@ -33,9 +40,11 @@ local expected_form = {
 	},
 	model = {}
 }
+expected_form.elements[1].variation.parent.variations[1].parent = expected_form.elements[1].variation.parent
+expected_form.elements[1].variation.fields = expected_form.elements[1].variation.parent.variations[1].fields
 
 describe("FormspecManager", function()
-	local instance = FormspecManager:new("unit_test")
+	local instance = FormspecManager:new(UIXInstance:new("unit_test"))
 
 	it("collects formspec name, options, elements, and model for addition to the instance", function()
 		assert.has_no.error(function()

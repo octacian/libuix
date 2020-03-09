@@ -23,7 +23,7 @@ end
 -- Adds a variation to the element.
 function Element:add_variation(fields, options)
 	utility.enforce_types({"table", "table?"}, fields, options)
-	table.insert(self.variations, Variation:new(self.name, fields, options))
+	table.insert(self.variations, Variation:new(self, fields, options))
 end
 
 -- Returns a new instance of the element, choosing the correct variation based on the

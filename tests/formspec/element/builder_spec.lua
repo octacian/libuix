@@ -33,17 +33,19 @@ describe("Builder", function()
 		it("adds a generic element with no default fields to the builder", function()
 			instance = Builder:new()
 			instance:element("builder_element", {})
-			assert.are.same({
+			local expected = {
 				builder_element = {
 					name = "builder_element",
 					variations = {
 						{
 							fields = {},
-							name = "builder_element"
 						}
 					}
 				}
-			}, instance.elements)
+			}
+			expected.builder_element.variations[1].parent = expected.builder_element
+
+			assert.are.same(expected, instance.elements)
 		end)
 	end)
 

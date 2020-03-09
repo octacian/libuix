@@ -62,6 +62,16 @@ function table.foreach(tbl, func)
 	end
 end
 
+-- Returns the type of some value, giving classes first-level types.
+local function get_type(value)
+	if type(value) == "table" and getmetatable(value)
+		and type(getmetatable(value).__class_name) == "string" then
+			return getmetatable(value).__class_name
+	end
+
+	return type(value)
+end
+
 -- Enforces a specific set of types for function arguments. `types` is an array-equivalent and should include then names
 -- of valid types. Arguments may be made optional by appending `?` (a question mark) to the type name. Setting `verbose`
 -- to false prevents stack traces and rule and argument dumps from being included in error messages. Arguments to check
@@ -111,7 +121,7 @@ local function enforce_types(verbose, rules, ...)
 		if required and value == nil then
 			error(error_prefix .. ("argument #%d is required"):format(key) .. error_postfix())
 		-- elseif the argument is not nil and does not match the rule, error
-		elseif value ~= nil and type(value) ~= rule then
+		elseif value ~= nil and get_type(value) ~= rule then
 			error(error_prefix .. ("argument #%d must be a %s (found '%s')"):format(key, rule, dump(value)) .. error_postfix())
 		end
 	end
@@ -120,6 +130,41 @@ local function enforce_types(verbose, rules, ...)
 	if table.count(args) > table.count(rules) then
 		error(error_prefix .. ("found %d argument(s) and only %d rule(s)"):format(table.count(args), table.count(rules))
 			.. error_postfix())
+	end
+end
+
+-- Ensures that a table contains only numerical indexes and optionally checks the type of each item within the table.
+local function enforce_array(verbose, tbl, expected)
+	if type(verbose) == "table" then
+		expected = tbl
+		tbl = verbose
+		verbose = true
+	end
+
+	enforce_types({"boolean", "table", "string?"}, verbose, tbl, expected)
+
+	local error_prefix = "libuix->enforce_array: "
+	-- Returns the error postfix only if verbose is not disabled.
+	local function error_postfix()
+		if verbose then
+			if expected then
+				return "; expected item type = '" .. expected .. "'; table = " .. dump(tbl) .. "\n\n" .. debug.traceback()
+			else
+				return "; table = " .. dump(tbl) .. "\n\n" .. debug.traceback()
+			end
+		else return "" end
+	end
+
+	-- Check table
+	for key, value in pairs(tbl) do
+		if type(key) ~= "number" then
+			error(error_prefix .. ("found non-numerically indexed entry at %s (contains: %s)"):format(dump(key), dump(value))
+				.. error_postfix())
+		end
+
+		if expected and get_type(value) ~= expected then
+			error(error_prefix .. ("entry #%d must be a %s (found %s)"):format(key, expected, dump(value)) .. error_postfix())
+		end
 	end
 end
 
@@ -198,7 +243,7 @@ function table.constrain(tbl, rules, strict, verbose)
 
 		-- if rule exists, make comparison
 		if rule then
-			local value_type = type(value)
+			local value_type = get_type(value)
 			-- if the type is controlled and it is not valid, error
 			if rule[2] and value_type ~= rule[2] then
 				error(error_prefix .. ("key '%s' must be of type %s (found %s)"):format(key, rule[2], value_type)
@@ -305,6 +350,14 @@ local function static_table(table, meta, ctrl)
 	return abstract
 end
 
+-- Returns a new class with name attached.
+local function make_class(name)
+	local class = {}
+	class.__index = class
+	class.__class_name = name
+	return class
+end
+
 -------------
 -- Exports --
 -------------
@@ -314,8 +367,11 @@ return {
 	contains = table.contains,
 	count = table.count,
 	foreach = table.foreach,
+	type = get_type,
 	constrain = table.constrain,
 	enforce_types = enforce_types,
+	enforce_array = enforce_array,
 	dump = dump,
-	static_table = static_table
+	static_table = static_table,
+	make_class = make_class
 }

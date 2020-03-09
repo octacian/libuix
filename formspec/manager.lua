@@ -8,8 +8,7 @@ setmetatable(Elements, { __index = _G })
 -- FormspecManager Class --
 ---------------------------
 
-local FormspecManager = {}
-FormspecManager.__index = FormspecManager
+local FormspecManager = utility.make_class("FormspecManager")
 
 -- Creates a new FormspecManager instance.
 function FormspecManager:new(modname)
@@ -32,6 +31,7 @@ function FormspecManager:__call(name)
 			-- Accept data model table.
 			return function(model)
 				utility.enforce_types({"table", "table", "table"}, options, elements, model)
+				utility.enforce_array(elements, "Element")
 				setfenv(2, getmetatable(Elements).__index) -- Remove Elements from the global environment.
 				self:add(name, options, elements, model)
 			end

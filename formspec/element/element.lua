@@ -1,12 +1,11 @@
 local utility = dofile(modpath.."/utility.lua")
-
 local Variation = dofile(modpath.."/formspec/element/variation.lua")
 
 -------------------
 -- Element Class --
 -------------------
 
-local Element = {}
+local Element = utility.make_class("Element")
 
 -- Creates a new instance of the element.
 function Element:new(name)

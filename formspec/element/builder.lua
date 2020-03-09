@@ -13,8 +13,7 @@ local default_fields = {
 -- Builder Class --
 -------------------
 
-local Builder = {}
-Builder.__index = Builder
+local Builder = utility.make_class("Builder")
 
 -- Creates a new builder instance with its own element store.
 function Builder:new()

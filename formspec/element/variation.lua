@@ -4,8 +4,7 @@ local utility = dofile(modpath.."/utility.lua")
 -- Variation Class --
 ---------------------
 
-local Variation = {}
-Variation.__index = Variation
+local Variation = utility.make_class("Variation")
 
 -- Creates a new instance of the variation.
 function Variation:new(name, fields, options)

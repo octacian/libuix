@@ -147,6 +147,17 @@ describe("enforce_array", function()
 	end)
 end)
 
+describe("dump", function()
+	it("does not trigger a stack overflow with cyclical tables", function()
+		local one = {name = "John Doe"}
+		local two = {visible = false}
+		one.child = two
+		two.parent = one
+
+		assert.has_no.error(function() dump(one) end)
+	end)
+end)
+
 describe("static_table", function()
 	local function real_tbl()
 		return { hello = HELLO_MSG, world = WORLD_MSG }

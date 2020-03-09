@@ -270,10 +270,16 @@ end
 
 if not _G["dump"] then
 	-- [function] Dump
-	function dump(val, indent)
+	function dump(val, indent, tables_printed)
+		if not tables_printed then tables_printed = {} end
+
 		if type(val) == "string" then
 			return "\""..val.."\""
 		elseif type(val) == "table" then
+			if table.contains(tables_printed, tostring(val)) then
+				return string.rep(" ", indent) .. tostring(val)
+			else table.insert(tables_printed, tostring(val)) end
+
 			local res = ""
 			indent = indent or 4 -- Use existing indent or start at 4
 
@@ -286,8 +292,8 @@ if not _G["dump"] then
 				res = res .. string.rep(" ", indent)
 
 				if type(value) == "table" then
-						res = res .. string.format("%s = {\n%s\n%s}\n", tostring(key),
-								dump(value, (indent + 4)), string.rep(" ", indent))
+					res = res .. string.format("%s (%s) = {\n%s\n%s}\n", tostring(key), tostring(value), dump(value, (indent + 4),
+						tables_printed), string.rep(" ", indent))
 				else
 					res = res .. string.format("%s = %s\n", tostring(key), dump(value))
 				end

@@ -72,6 +72,12 @@ local function get_type(value)
 	return type(value)
 end
 
+-- Checks if some value has the expected type.
+local function check_type(value, expected)
+	if type(value) == expected or get_type(value) == expected then return true
+	else return false end
+end
+
 -- Enforces a specific set of types for function arguments. `types` is an array-equivalent and should include then names
 -- of valid types. Arguments may be made optional by appending `?` (a question mark) to the type name. Setting `verbose`
 -- to false prevents stack traces and rule and argument dumps from being included in error messages. Arguments to check
@@ -121,7 +127,7 @@ local function enforce_types(verbose, rules, ...)
 		if required and value == nil then
 			error(error_prefix .. ("argument #%d is required"):format(key) .. error_postfix())
 		-- elseif the argument is not nil and does not match the rule, error
-		elseif value ~= nil and get_type(value) ~= rule then
+		elseif value ~= nil and not check_type(value, rule) then
 			error(error_prefix .. ("argument #%d must be a %s (found '%s')"):format(key, rule, dump(value)) .. error_postfix())
 		end
 	end
@@ -162,7 +168,7 @@ local function enforce_array(verbose, tbl, expected)
 				.. error_postfix())
 		end
 
-		if expected and get_type(value) ~= expected then
+		if expected and not check_type(value, expected) then
 			error(error_prefix .. ("entry #%d must be a %s (found %s)"):format(key, expected, dump(value)) .. error_postfix())
 		end
 	end
@@ -243,10 +249,9 @@ function table.constrain(tbl, rules, strict, verbose)
 
 		-- if rule exists, make comparison
 		if rule then
-			local value_type = get_type(value)
 			-- if the type is controlled and it is not valid, error
-			if rule[2] and value_type ~= rule[2] then
-				error(error_prefix .. ("key '%s' must be of type %s (found %s)"):format(key, rule[2], value_type)
+			if rule[2] and not check_type(value, rule[2]) then
+				error(error_prefix .. ("key '%s' must be of type %s (found %s)"):format(key, rule[2], get_type(value))
 					.. error_postfix())
 			end
 		end
@@ -374,6 +379,7 @@ return {
 	count = table.count,
 	foreach = table.foreach,
 	type = get_type,
+	check_type = check_type,
 	constrain = table.constrain,
 	enforce_types = enforce_types,
 	enforce_array = enforce_array,

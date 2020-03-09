@@ -6,6 +6,7 @@ local contains = require("utility").contains
 local count = require("utility").count
 local foreach = require("utility").foreach
 local get_type = require("utility").type
+local check_type = require("utility").check_type
 local constrain = require("utility").constrain
 local static_table = require("utility").static_table
 local enforce_types = require("utility").enforce_types
@@ -74,12 +75,21 @@ describe("table.foreach", function()
 	end)
 end)
 
-describe("check_type", function()
+describe("type", function()
 	it("checks if a variable is of the expected type, checking class IDs as well", function()
 		assert.are.equal("number", get_type(28))
 		assert.are.equal("boolean", get_type(true))
 		assert.are.equal("table", get_type({123}))
 		assert.are.equal("TestClass", get_type(TestClass:new()))
+	end)
+end)
+
+describe("check_type", function()
+	it("checks if some value has the expected type", function()
+		assert.is_true(check_type(28, "number"))
+		assert.is_true(check_type(TestClass:new(), "table"))
+		assert.is_true(check_type(TestClass:new(), "TestClass"))
+		assert.is_false(check_type(false, "string"))
 	end)
 end)
 

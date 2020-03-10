@@ -273,6 +273,16 @@ function table.constrain(tbl, rules, strict, verbose)
 	end
 end
 
+-- Removes index gaps from an array.
+function table.reorder(tbl)
+	enforce_array(tbl)
+	local out = {}
+	for _, val in pairs(tbl) do
+		table.insert(out, val)
+	end
+	return out
+end
+
 if not _G["dump"] then
 	-- [function] Dump
 	function dump(val, indent, tables_printed)
@@ -369,6 +379,54 @@ local function make_class(name)
 	return class
 end
 
+-----------------
+-- Queue Class --
+-----------------
+
+local Queue = make_class("Queue")
+
+-- Queue records function calls on an object for later execution on any object.
+function Queue:new()
+	local instance = {}
+	setmetatable(instance, Queue)
+	return instance
+end
+
+function Queue:__index(key)
+	for k, v in pairs(Queue) do
+		if k == key then
+			return v
+		end
+	end
+
+	return function(...)
+		local args = table.copy(arg)
+		local include_self = false
+		if arg.n > 0 and tostring(arg[1]) == tostring(self) then
+			include_self = true
+			args[1] = nil
+		end
+		args.n = nil
+		table.insert(self, {key = key, include_self = include_self, args = table.reorder(args)})
+	end
+end
+
+function Queue:_start(target)
+	enforce_types({"table"}, target)
+	for key, item in ipairs(self) do
+		if not target[item.key] then
+			error(("libuix->Queue:_start(): attempt to call field '%s' (a nil value)"):format(item.key))
+		end
+
+		if item.include_self then
+			target[item.key](target, unpack(item.args))
+		else
+			target[item.key](unpack(item.args))
+		end
+		self[key] = nil
+	end
+end
+
 -------------
 -- Exports --
 -------------
@@ -383,7 +441,9 @@ return {
 	constrain = table.constrain,
 	enforce_types = enforce_types,
 	enforce_array = enforce_array,
+	reorder = table.reorder,
 	dump = dump,
 	static_table = static_table,
-	make_class = make_class
+	make_class = make_class,
+	Queue = Queue
 }

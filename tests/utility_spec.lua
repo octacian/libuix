@@ -11,7 +11,9 @@ local constrain = require("utility").constrain
 local static_table = require("utility").static_table
 local enforce_types = require("utility").enforce_types
 local enforce_array = require("utility").enforce_array
+local reorder = require("utility").reorder
 local make_class = require("utility").make_class
+local Queue = require("utility").Queue
 
 local HELLO_MSG = "Hello!"
 local WORLD_MSG = "What up world!"
@@ -157,6 +159,13 @@ describe("enforce_array", function()
 	end)
 end)
 
+describe("reorder", function()
+	it("removes index gaps from an array", function()
+		local one = {[2] = "hello", [7] = 19}
+		assert.are.same({"hello", 19}, reorder(one))
+	end)
+end)
+
 describe("dump", function()
 	it("does not trigger a stack overflow with cyclical tables", function()
 		local one = {name = "John Doe"}
@@ -227,5 +236,33 @@ describe("make_class", function()
 		local instance = TestClass:new()
 		assert.are.equal(TestClass.__class_name, getmetatable(instance).__class_name)
 		assert.are.equal("function", type(instance.new))
+	end)
+end)
+
+describe("Queue", function()
+	it("records function calls on an object for later execution on any object", function()
+		local queue = Queue:new()
+		queue:say_hello("John")
+
+		local output = ""
+		local target = {
+			say_hello = function(self, name)
+				output = "Hello " .. name .. "!"
+			end,
+			say_goodbye = function(name)
+				output = "Goodbye " .. name .. "!"
+			end
+		}
+
+		queue:_start(target)
+		assert.are.equal("Hello John!", output)
+		assert.are.same({}, queue)
+
+		queue.say_goodbye("John")
+		queue:_start(target)
+		assert.are.equal("Goodbye John!", output)
+
+		assert.has_error(function() queue.invalid(); queue:_start(target) end,
+			"libuix->Queue:_start(): attempt to call field 'invalid' (a nil value)")
 	end)
 end)

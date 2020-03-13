@@ -14,12 +14,15 @@ local default_fields = {
 -------------------
 
 local Builder = utility.make_class("Builder")
+Builder.default_fields = default_fields -- Defaults for use when defining elements
 
 -- Creates a new builder instance with its own element store.
-function Builder:new()
+function Builder:new(parent)
+	utility.enforce_types({"FormspecManager"}, parent)
+
 	local instance = {
+		parent = parent,
 		elements = {}, -- Elements manage variations; referenced by name.
-		default_fields = default_fields -- Defaults for use when defining elements
 	}
 
 	setmetatable(instance, Builder)
@@ -49,7 +52,7 @@ function Builder:add(name, positioned, resizable, fields, options)
 	end
 
 	if not self.elements[name] then
-		self.elements[name] = Element:new(name)
+		self.elements[name] = Element:new(self.parent, name)
 	end
 
 	self.elements[name]:add_variation(fields, options)

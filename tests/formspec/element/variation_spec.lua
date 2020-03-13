@@ -1,7 +1,7 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
-local Element = require("formspec/element/element")
+local Element = require("tests/mock").Element
 local Variation = require("formspec/element/variation")
 local Model = require("formspec/model")
 

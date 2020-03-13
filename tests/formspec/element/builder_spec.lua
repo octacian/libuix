@@ -1,10 +1,11 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
+local FormspecManager = require("tests/mock").FormspecManager
 local Builder = require("formspec/element/builder")
 
 describe("Builder", function()
-	local instance = Builder:new()
+	local instance = Builder:new(FormspecManager:new("builder_spec"))
 
 	describe("add", function()
 		it("adds a generic element to the builder", function()
@@ -31,10 +32,11 @@ describe("Builder", function()
 
 	describe("element", function()
 		it("adds a generic element with no default fields to the builder", function()
-			instance = Builder:new()
+			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:element("builder_element", {})
 			local expected = {
 				builder_element = {
+					parent = {modname = "builder_spec"},
 					name = "builder_element",
 					variations = {
 						{
@@ -51,7 +53,7 @@ describe("Builder", function()
 
 	describe("positioned", function()
 		it("adds an element with default fields (x, y: number) to the builder", function()
-			instance = Builder:new()
+			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:positioned("builder_element", {})
 			assert.are.same({instance.default_fields.x, instance.default_fields.y},
 				instance.elements.builder_element.variations[1].fields)
@@ -60,7 +62,7 @@ describe("Builder", function()
 
 	describe("resizable", function()
 		it("adds an element with default fields (w, h: number) to the builder", function()
-			instance = Builder:new()
+			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:resizable("builder_element", {})
 			assert.are.same({instance.default_fields.w, instance.default_fields.h},
 				instance.elements.builder_element.variations[1].fields)
@@ -69,7 +71,7 @@ describe("Builder", function()
 
 	describe("rect", function()
 		it("adds an element with default fields (x, y, w, h: number) to the builder", function()
-			instance = Builder:new()
+			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:rect("builder_element", {})
 			assert.are.same({
 				instance.default_fields.x, instance.default_fields.y, instance.default_fields.w, instance.default_fields.h

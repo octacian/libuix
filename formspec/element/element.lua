@@ -8,10 +8,11 @@ local Variation = dofile(modpath.."/formspec/element/variation.lua")
 local Element = utility.make_class("Element")
 
 -- Creates a new instance of the element.
-function Element:new(name)
-	utility.enforce_types({"string"}, name)
+function Element:new(parent, name)
+	utility.enforce_types({"FormspecManager", "string"}, parent, name)
 
 	local instance = {
+		parent = parent,
 		name = name,
 		variations = {}
 	}
@@ -30,7 +31,7 @@ end
 -- definition argument, or throwing an error if no variations match the definition.
 function Element:__call(def)
 	utility.enforce_types({"table"}, def)
-	local instance = Element:new(self.name)
+	local instance = Element:new(self.parent, self.name)
 
 	instance.variation = table.foreach(self.variations, function(variation)
 		local variation_instance = variation(def)
@@ -54,7 +55,27 @@ function Element:__index(key)
 	local value = rawget(Element, key); if value then
 		return value
 	end value = rawget(self, "variation"); if value then
-		return rawget(self, "variation")[key]
+		local raw_variation = rawget(self, "variation")
+		local raw_value = raw_variation[key]
+		if type(raw_value) == "function" then
+			return function(...)
+				local args = table.copy(arg)
+				local include_self = false
+				if arg.n > 0 and tostring(arg[1]) == tostring(self) then
+					include_self = true
+					args[1] = nil
+				end
+				args.n = nil
+
+				if include_self then
+					return raw_value(raw_variation, unpack(table.reorder(args)))
+				else
+					return raw_value(unpack(args))
+				end
+			end
+		end
+
+		return raw_value
 	end
 end
 

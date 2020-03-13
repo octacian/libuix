@@ -2,7 +2,6 @@ local utility = dofile(modpath.."/utility.lua")
 
 local Model = dofile(modpath.."/formspec/model.lua")
 local Elements = dofile(modpath.."/formspec/elements.lua")
-setmetatable(Elements, { __index = _G })
 
 ---------------------------
 -- FormspecManager Class --
@@ -15,6 +14,10 @@ function FormspecManager:new(parent)
 	utility.enforce_types({"UIXInstance"}, parent)
 	local instance = { parent = parent, forms = {} }
 	setmetatable(instance, FormspecManager)
+
+	instance.elements = Elements(instance)
+	setmetatable(instance.elements, { __index = _G })
+
 	return instance
 end
 
@@ -22,7 +25,7 @@ end
 function FormspecManager:__call(name)
 	utility.enforce_types({"string"}, name)
 	-- Add element functions to the global environment.
-	setfenv(2, Elements)
+	setfenv(2, self.elements)
 
 	-- Accept options, including size and the `fixed_size` and `no_prepend` controls.
 	return function(options)
@@ -32,7 +35,7 @@ function FormspecManager:__call(name)
 			return function(model)
 				utility.enforce_types({"table", "table", "table"}, options, elements, model)
 				utility.enforce_array(elements, "Element")
-				setfenv(2, getmetatable(Elements).__index) -- Remove Elements from the global environment.
+				setfenv(2, getmetatable(self.elements).__index) -- Remove Elements from the global environment.
 				self:add(name, options, elements, model)
 			end
 		end

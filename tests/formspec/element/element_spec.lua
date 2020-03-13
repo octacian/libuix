@@ -1,9 +1,10 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
+local FormspecManager = require("tests/mock").FormspecManager
 local Element = require("formspec/element/element")
 
-local element = Element:new("element_spec")
+local element = Element:new(FormspecManager:new(), "element_spec")
 element:add_variation({
 	{ "x", "number" }
 })

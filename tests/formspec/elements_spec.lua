@@ -1,7 +1,8 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
-local Elements = require("formspec/elements")
+local manager = require("tests/mock").FormspecManager:new("elements_spec")
+local Elements = require("formspec/elements")(manager)
 
 function test(name, expected, fields)
 	local message = "takes "

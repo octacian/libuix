@@ -2,7 +2,7 @@ package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
 _G.minetest = {}
-local UIXInstance = require("libuix")
+local UIXInstance = require("tests/mock").UIXInstance
 local FormspecManager = require("formspec/manager")
 
 -- show_formspec mock function
@@ -10,38 +10,6 @@ local last_show_formspec_call = {}
 function minetest.show_formspec(player_name, form_name, formstring)
 	last_show_formspec_call = {player_name, form_name, formstring}
 end
-
-local expected_form = {
-	name = "manager_spec",
-	options = {w = 5, h = 10},
-	elements = {
-		{
-			variations = {},
-			name = "label",
-			variation = {
-				parent = {
-					name = "label",
-					variations = {
-						{
-							fields = {
-								{"x", "number", separator = ","},
-								{"y", "number"},
-								{"label", "string"}
-							}
-						}
-					}
-				},
-				cache = {
-					map_fields = {"x", "y", "label"},
-				},
-				def = {x = 0, y = 0, label = "Hello!"}
-			}
-		}
-	},
-	model = {}
-}
-expected_form.elements[1].variation.parent.variations[1].parent = expected_form.elements[1].variation.parent
-expected_form.elements[1].variation.fields = expected_form.elements[1].variation.parent.variations[1].fields
 
 describe("FormspecManager", function()
 	local instance = FormspecManager:new(UIXInstance:new("unit_test"))
@@ -52,7 +20,8 @@ describe("FormspecManager", function()
 				label { x = 0, y = 0, label = "Hello!" }
 			} {}
 		end)
-		assert.are.same(expected_form, instance.forms[1])
+
+		assert.are.equal("Hello!", instance.forms[1].elements[1].def.label)
 	end)
 
 	describe("formspec options include", function()
@@ -99,7 +68,7 @@ describe("FormspecManager", function()
 
 	describe("get", function()
 		it("returns a formspec by name from the instance", function()
-			assert.are.same(expected_form, instance:get("manager_spec"))
+			assert.are.equal("manager_spec", instance:get("manager_spec").name)
 			assert.falsy(instance:get("invalid"))
 		end)
 	end)

@@ -4,8 +4,7 @@ local utility = dofile(modpath.."/utility.lua")
 -- Model Class --
 -----------------
 
-local Model = {}
-Model.__index = Model
+local Model = utility.make_class("Model")
 
 -- Creates a new Model instance.
 function Model:new(data)

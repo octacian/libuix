@@ -1,15 +1,5 @@
 local utility = require("utility")
 
---- Element Class ---
-
-local Element = utility.make_class("Element")
-
-function Element:new(name)
-	local instance = {name = name}
-	setmetatable(instance, Element)
-	return instance
-end
-
 --- FormspecManager Class ---
 
 local FormspecManager = utility.make_class("FormspecManager")
@@ -17,6 +7,16 @@ local FormspecManager = utility.make_class("FormspecManager")
 function FormspecManager:new(modname)
 	local instance = {modname = modname}
 	setmetatable(instance, FormspecManager)
+	return instance
+end
+
+--- Form Class ---
+
+local Form = utility.make_class("Form")
+
+function Form:new(name)
+	local instance = {name = name}
+	setmetatable(instance, Form)
 	return instance
 end
 
@@ -30,12 +30,23 @@ function UIXInstance:new(modname)
 	return instance
 end
 
+--- Element Class ---
+
+local Element = utility.make_class("Element")
+
+function Element:new(name)
+	local instance = {name = name}
+	setmetatable(instance, Element)
+	return instance
+end
+
 -------------
 -- Exports --
 -------------
 
 return {
-	Element = Element,
+	UIXInstance = UIXInstance,
 	FormspecManager = FormspecManager,
-	UIXInstance = UIXInstance
+	Form = Form,
+	Element = Element
 }

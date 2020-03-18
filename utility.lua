@@ -1,3 +1,70 @@
+------------------------
+-- ErrorBuilder Class --
+------------------------
+
+local ErrorBuilder = {}
+ErrorBuilder.__index = ErrorBuilder
+ErrorBuilder.__class_name = "ErrorBuilder"
+
+-- Creates a new ErrorBuilder instance.
+function ErrorBuilder:new(func_identifier, verbose, include_traceback)
+	assert(type(func_identifier) == "string", ("libuix->ErrorBuilder:new(): argument 1 must be a string (found %s)\n\n")
+		:format(type(func_identifier)) .. debug.traceback())
+	assert(verbose == nil or type(verbose) == "boolean", ("libuix->ErrorBuilder:new(): argument 2 must be a boolean or "
+		.. "nil (found %s)\n\n"):format(type(verbose)) .. debug.traceback())
+	assert(include_traceback == nil or type(include_traceback) == "boolean", ("libuix->ErrorBuilder:new(): argument 2 "
+		.. "must be a boolean or nil (found %s)\n\n"):format(type(include_traceback)) .. debug.traceback())
+
+	if verbose == nil then verbose = true end
+	if include_traceback == nil then include_traceback = true end
+
+	local instance = {
+		identifier = func_identifier,
+		verbose = verbose,
+		traceback = include_traceback
+	}
+	setmetatable(instance, ErrorBuilder)
+
+	return instance
+end
+
+-- Sets the postfix string.
+function ErrorBuilder:set_postfix(msg, ...)
+	assert(type(msg) == "string", ("libuix->ErrorBuilder:set_postfix(): argument 1 must be a string (found %s)\n\n")
+		:format(type(msg)) .. debug.traceback())
+
+	local args = table.copy(arg)
+	if args.n > 0 then msg = msg:format(unpack(arg)) end
+	self.postfix = msg
+end
+
+-- Returns the error message to be thrown.
+function ErrorBuilder:build(msg, arg)
+	assert(type(msg) == "string", ("libuix->ErrorBuilder:throw(): argument 1 must be a string (found %s)\n\n")
+		:format(type(msg)) .. debug.traceback())
+
+	local args = table.copy(arg)
+	if args.n > 0 then msg = msg:format(unpack(arg)) end
+
+	local postfix = ""
+	if self.verbose then
+		if self.traceback then postfix = "\n\n" .. debug.traceback() end
+		if self.postfix then postfix = "\n\n" .. self.postfix  .. postfix end
+	end
+
+	return ("libuix->%s: %s%s"):format(self.identifier, msg, postfix)
+end
+
+-- Throws an error, passing additional arguments to `string.format`.
+function ErrorBuilder:throw(msg, ...)
+	error(self:build(msg, arg))
+end
+
+-- Makes an assertion and throws an error if it fails.
+function ErrorBuilder:assert(assertion, msg, ...)
+	if not assertion then self:throw(msg, unpack(arg)) end
+end
+
 ---------------------
 -- Table Utilities --
 ---------------------
@@ -5,8 +72,9 @@
 if not table.copy then
 	-- Returns a deep copy of a table including metatables.
 	function table.copy(original, ignore_type, _tbl_index)
+		local err = ErrorBuilder:new("table.copy")
 		if not ignore_type then
-			assert(type(original) == "table", "table.copy: argument must be a table. " .. debug.traceback())
+			err:assert(type(original) == "table", "argument must be a table (found %s)", type(original))
 		end
 
 		if not _tbl_index then _tbl_index = {} end
@@ -18,7 +86,6 @@ if not table.copy then
 				local value_type = type(value)
 				if value_type ~= "table" or not table.contains(_tbl_index, tostring(value)) then
 					if value_type == "table" then
-						--print("Copying " .. tostring(value))
 						table.insert(_tbl_index, tostring(value))
 					end
 
@@ -92,13 +159,8 @@ local function enforce_types(verbose, rules, ...)
 		verbose = true
 	end
 
-	local error_prefix = "libuix->enforce_types: "
-	-- Returns the error postfix only if verbose is not disabled.
-	local function error_postfix()
-		if verbose then
-			return "; rules = " .. dump(rules) .. "; arguments = " .. dump(args) .. "\n\n" .. debug.traceback()
-		else return "" end
-	end
+	local err = ErrorBuilder:new("enforce_types", verbose)
+	err:set_postfix("Rules = %s; Arguments = %s", dump(rules), dump(args))
 
 	-- Check if argument is required
 	local function is_required(rule)
@@ -115,27 +177,25 @@ local function enforce_types(verbose, rules, ...)
 	-- Check rules
 	for key, raw_rule in ipairs(rules) do
 		-- Validate rule structure
-		assert(type(key) == "number", error_prefix .. ("table must be array-equivalent, only numbers may be used as rule " ..
-			"keys (found %s '%s')"):format(type(key), key) .. error_postfix())
-		assert(type(raw_rule) == "string", error_prefix .. ("expected rules value to be a string (found rules[%s] = '%s')")
-			:format(key, raw_rule) .. error_postfix())
+		err:assert(type(key) == "number", "table must be array-equivalent, only numbers may be used as rule keys "
+			.. "(found %s '%s')", type(key), key)
+		err:assert(type(raw_rule) == "string", "expected rules value to be a string (found rules[%s] = '%s')", key, raw_rule)
 
 		local value = args[key]
 		local rule, required = is_required(raw_rule)
 
 		-- if the argument is required and nil, error
 		if required and value == nil then
-			error(error_prefix .. ("argument #%d is required"):format(key) .. error_postfix())
+			err:throw("argument #%d is required", key)
 		-- elseif the argument is not nil and does not match the rule, error
 		elseif value ~= nil and not check_type(value, rule) then
-			error(error_prefix .. ("argument #%d must be a %s (found '%s')"):format(key, rule, dump(value)) .. error_postfix())
+			err:throw("argument #%d must be a %s (found %s)", key, rule, get_type(value))
 		end
 	end
 
 	-- if there are more arguments than rules, error
 	if table.count(args) > table.count(rules) then
-		error(error_prefix .. ("found %d argument(s) and only %d rule(s)"):format(table.count(args), table.count(rules))
-			.. error_postfix())
+		err:throw("found %d argument(s) and only %d rule(s)", table.count(args), table.count(rules))
 	end
 end
 
@@ -149,27 +209,21 @@ local function enforce_array(verbose, tbl, expected)
 
 	enforce_types({"boolean", "table", "string?"}, verbose, tbl, expected)
 
-	local error_prefix = "libuix->enforce_array: "
-	-- Returns the error postfix only if verbose is not disabled.
-	local function error_postfix()
-		if verbose then
-			if expected then
-				return "; expected item type = '" .. expected .. "'; table = " .. dump(tbl) .. "\n\n" .. debug.traceback()
-			else
-				return "; table = " .. dump(tbl) .. "\n\n" .. debug.traceback()
-			end
-		else return "" end
+	local err = ErrorBuilder:new("enforce_array", verbose)
+	if expected then
+		err:set_postfix("Expected Item Type = %s; Table = %s", expected, dump(tbl))
+	else
+		err:set_postfix("Table = %s", dump(tbl))
 	end
 
 	-- Check table
 	for key, value in pairs(tbl) do
 		if type(key) ~= "number" then
-			error(error_prefix .. ("found non-numerically indexed entry at %s (contains: %s)"):format(dump(key), dump(value))
-				.. error_postfix())
+			err:throw("found non-numerically indexed entry at %s (contains: %s)", dump(key), dump(value))
 		end
 
 		if expected and not check_type(value, expected) then
-			error(error_prefix .. ("entry #%d must be a %s (found %s)"):format(key, expected, dump(value)) .. error_postfix())
+			err:throw("entry #%d must be a %s (found %s)", key, expected, get_type(value))
 		end
 	end
 end
@@ -187,27 +241,19 @@ local function validate_rules(rules, verbose)
 	enforce_types({"table", "boolean?"}, rules, verbose)
 	if verbose == nil then verbose = true end
 
-	local error_prefix = "libuix->validate_rules: "
-	-- Returns the error postfix only if verbose is not disabled.
-	local function error_postfix()
-		if verbose then
-			return "; rules = " .. dump(rules) .. "; " .. "\n\n" .. debug.traceback()
-		else return "" end
-	end
+	local err = ErrorBuilder:new("validate_rules", verbose)
+	err:set_postfix("Rules = %s", dump(rules))
 
-	assert(table.count(rules) > 0, error_prefix .. ("'rules' argument (no. 1), a table, must contain at least one rule")
-		.. error_postfix())
+	err:assert(table.count(rules) > 0, "'rules' argument (no. 1), a table, must contain at least one rule")
 
 	-- Verify that rules are valid
 	for index, rule in ipairs(rules) do
-		assert(type(rule) == "table", error_prefix .. ("rule[%d] must be a table (found %s)"):format(index, type(rule))
-			.. error_postfix())
-		assert(type(rule[1]) == "string", error_prefix .. ("rule[%d][1] must be a string (found %s)")
-			:format(index, type(rule[1])) .. error_postfix())
-		assert(rule[2] == nil or type(rule[2]) == "string", error_prefix .. ("rule[%d][2] must be a string or nil (found %s)")
-			:format(index, type(rule[2])) .. error_postfix())
-		assert(rule.required == nil or type(rule.required) == "boolean", error_prefix
-			.. ("rule[%d].required must be a boolean or nil (found %s)"):format(index, type(rule.required)) .. error_postfix())
+		err:assert(type(rule) == "table", "rule[%d] must be a table (found %s)", index, type(rule))
+		err:assert(type(rule[1]) == "string", "rule[%d][1] must be a string (found %s)", index, type(rule[1]))
+		err:assert(rule[2] == nil or type(rule[2]) == "string", "rule[%d][2] must be a string or nil (found %s)",
+			index, type(rule[2]))
+		err:assert(rule.required == nil or type(rule.required) == "boolean",
+			"rule[%d].required must be a boolean or nil (found %s)", index, type(rule.required))
 	end
 end
 
@@ -227,14 +273,8 @@ function table.constrain(tbl, rules, strict, verbose)
 		end
 	end
 
-	local error_prefix = "libuix->table.constrain: "
-	-- Returns the error postfix only if verbose is not disabled.
-	local function error_postfix()
-		if verbose then
-			return "; table = " .. dump(tbl) .. "; rules = " .. dump(rules) .. " strict mode = " .. tostring(strict) .. "\n\n"
-				.. debug.traceback()
-		else return "" end
-	end
+	local err = ErrorBuilder:new("table.constrain", verbose)
+	err:set_postfix("Table = %s; Rules = %s; Strict Mode = %s", dump(tbl), dump(rules), tostring(strict))
 
 	-- Validate rules
 	validate_rules(rules, verbose)
@@ -244,15 +284,14 @@ function table.constrain(tbl, rules, strict, verbose)
 		local rule = get_rule(key)
 		-- if no rule exists for this key and strict mode hasn't been disabled, error
 		if not rule and strict ~= true then
-			error(error_prefix .. ("key '%s' is not allowed in strict mode"):format(key) .. error_postfix())
+			err:throw("key '%s' is not allowed in strict mode", key)
 		end
 
 		-- if rule exists, make comparison
 		if rule then
 			-- if the type is controlled and it is not valid, error
 			if rule[2] and not check_type(value, rule[2]) then
-				error(error_prefix .. ("key '%s' must be of type %s (found %s)"):format(key, rule[2], get_type(value))
-					.. error_postfix())
+				err:throw("key '%s' must be of type %s (found %s)", key, rule[2], get_type(value))
 			end
 		end
 	end
@@ -268,7 +307,7 @@ function table.constrain(tbl, rules, strict, verbose)
 
 		if missing_keys ~= "" then
 			missing_keys = missing_keys:sub(1, -3)
-			error(error_prefix .. "key(s) " .. missing_keys .. " are required" .. error_postfix())
+			err:throw("key(s) %s are required", missing_keys)
 		end
 	end
 end
@@ -333,9 +372,11 @@ local function static_table(table, meta, ctrl)
 
 	local abstract = {}
 
+	local err = ErrorBuilder:new("static_table")
+
 	-- Prevent modifying the table directly.
 	function meta.__newindex(tbl, key, value)
-		error(("libuix: attempt to modify read-only table '%s'"):format(table))
+		err:throw("attempt to modify read-only table '%s'", table)
 	end
 
 	local old_index = meta.__index
@@ -350,8 +391,7 @@ local function static_table(table, meta, ctrl)
 			return raw_value
 		end
 
-		assert(ctrl._mode == "whitelist" or ctrl._mode == "blacklist",
-			("libuix!static_table: invalid control mode '%s'"):format(ctrl._mode))
+		err:assert(ctrl._mode == "whitelist" or ctrl._mode == "blacklist", "invalid control mode '%s'", ctrl._mode)
 
 		-- Loop over control table, ignoring the mode.
 		for ctrl_key, value in pairs(ctrl) do
@@ -432,6 +472,7 @@ end
 -------------
 
 return {
+	ErrorBuilder = ErrorBuilder,
 	copy = table.copy,
 	contains = table.contains,
 	count = table.count,

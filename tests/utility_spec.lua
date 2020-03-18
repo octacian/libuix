@@ -1,6 +1,7 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 
+local ErrorBuilder = require("utility").ErrorBuilder
 local copy = require("utility").copy
 local contains = require("utility").contains
 local count = require("utility").count
@@ -27,6 +28,19 @@ function TestClass:new()
 end
 
 -----------------------------------------------------------------------------------------------------------------------
+
+describe("ErrorBuilder", function()
+	it("populates error message with repetitive fields", function()
+		local err = ErrorBuilder:new("error_spec()", true, false)
+		assert.has_error(function() err:throw("got message %s %s", "hello", "world") end,
+			"libuix->error_spec(): got message hello world")
+		assert.has_error(function() err:assert(true == false, "failure %s", "is known") end,
+			"libuix->error_spec(): failure is known")
+		assert.has_no.error(function() err:assert(21 == 21, "oof") end)
+		err:set_postfix("postfix info")
+		assert.has_error(function() err:throw("new %s", "user") end, "libuix->error_spec(): new user\n\npostfix info")
+	end)
+end)
 
 describe("table.copy", function()
 	it("returns a deep copy of a table including any metatables", function()
@@ -131,9 +145,9 @@ describe("enforce_types", function()
 		assert.has_no.error(function() test_func("John Doe", true) end)
 		assert.has_no.error(function() enforce_types(true, {"string"}, "Hello") end)
 		assert.has_no.error(function() enforce_types({"TestClass"}, TestClass:new()) end)
-		assert.has_error(function() test_func(81) end, "libuix->enforce_types: argument #1 must be a string (found '81')")
+		assert.has_error(function() test_func(81) end, "libuix->enforce_types: argument #1 must be a string (found number)")
 		assert.has_error(function() test_func("John Doe", 15) end,
-			"libuix->enforce_types: argument #2 must be a boolean (found '15')")
+			"libuix->enforce_types: argument #2 must be a boolean (found number)")
 		assert.has_error(function() test_func(nil, 15) end, "libuix->enforce_types: argument #1 is required")
 		assert.has_error(function() enforce_types(false, {"string", "number"}, "Hello") end,
 			"libuix->enforce_types: argument #2 is required")

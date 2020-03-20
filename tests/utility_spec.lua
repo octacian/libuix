@@ -37,7 +37,7 @@ describe("ErrorBuilder", function()
 		assert.has_error(function() err:assert(true == false, "failure %s", "is known") end,
 			"libuix->error_spec(): failure is known")
 		assert.has_no.error(function() err:assert(21 == 21, "oof") end)
-		err:set_postfix("postfix info")
+		err:set_postfix(function() return "postfix info" end)
 		assert.has_error(function() err:throw("new %s", "user") end, "libuix->error_spec(): new user\n\npostfix info")
 	end)
 end)

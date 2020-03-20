@@ -8,12 +8,20 @@ ErrorBuilder.__class_name = "ErrorBuilder"
 
 -- Creates a new ErrorBuilder instance.
 function ErrorBuilder:new(func_identifier, verbose, include_traceback)
-	assert(type(func_identifier) == "string", ("libuix->ErrorBuilder:new(): argument 1 must be a string (found %s)\n\n")
-		:format(type(func_identifier)) .. debug.traceback())
-	assert(verbose == nil or type(verbose) == "boolean", ("libuix->ErrorBuilder:new(): argument 2 must be a boolean or "
-		.. "nil (found %s)\n\n"):format(type(verbose)) .. debug.traceback())
-	assert(include_traceback == nil or type(include_traceback) == "boolean", ("libuix->ErrorBuilder:new(): argument 2 "
-		.. "must be a boolean or nil (found %s)\n\n"):format(type(include_traceback)) .. debug.traceback())
+	if type(func_identifier) ~= "string" then
+		error(("libuix->ErrorBuilder:new(): argument 1 must be a string (found %s)\n\n"):format(type(func_identifier))
+			.. debug.traceback())
+	end
+
+	if verbose ~= nil and type(verbose) ~= "boolean" then
+		error(("libuix->ErrorBuilder:new(): argument 2 must be a boolean or nil (found %s)\n\n"):format(type(verbose))
+			.. debug.traceback())
+	end
+
+	if include_traceback ~= nil and type(include_traceback) ~= "boolean" then
+		error(("libuix->ErrorBuilder:new(): argument 2 "
+			.. "must be a boolean or nil (found %s)\n\n"):format(type(include_traceback)) .. debug.traceback())
+	end
 
 	if verbose == nil then
 		if os.getenv("MODE") == "UNIT_TEST" then
@@ -34,33 +42,39 @@ function ErrorBuilder:new(func_identifier, verbose, include_traceback)
 end
 
 -- Sets the postfix string.
-function ErrorBuilder:set_postfix(msg, ...)
-	assert(type(msg) == "string", ("libuix->ErrorBuilder:set_postfix(): argument 1 must be a string (found %s)\n\n")
-		:format(type(msg)) .. debug.traceback())
+function ErrorBuilder:set_postfix(fn)
+	if type(fn) ~= "function" then
+		error(("libuix->ErrorBuilder:set_postfix(): argument 1 must be a function (found %s)\n\n"):format(type(fn))
+			.. debug.traceback())
+	end
 
-	if arg.n > 0 then msg = msg:format(unpack(arg)) end
-	self.postfix = msg
+	self.postfix = fn
 end
 
--- Returns the error message to be thrown.
-function ErrorBuilder:build(msg, arg)
-	assert(type(msg) == "string", ("libuix->ErrorBuilder:throw(): argument 1 must be a string (found %s)\n\n")
-		:format(type(msg)) .. debug.traceback())
+-- Throws an error, passing additional arguments to `string.format`.
+function ErrorBuilder:throw(msg, ...)
+	if type(msg) ~= "string" then
+		error(("libuix->ErrorBuilder:throw(): argument 1 must be a string (found %s)\n\n"):format(type(msg))
+			.. debug.traceback())
+	end
 
 	if arg.n > 0 then msg = msg:format(unpack(arg)) end
 
 	local postfix = ""
 	if self.verbose then
 		if self.traceback then postfix = "\n\n" .. debug.traceback() end
-		if self.postfix then postfix = "\n\n" .. self.postfix  .. postfix end
+
+		if self.postfix then
+			local postfix_msg = self.postfix()
+
+			assert(type(postfix_msg) == "string", ("libuix->ErrorBuilder:set_postfix(fn): fn return value must be a string "
+				.. "(found %s)\n\n"):format(type(postfix_msg)) .. debug.traceback())
+
+			postfix = "\n\n" .. postfix_msg  .. postfix
+		end
 	end
 
-	return ("libuix->%s: %s%s"):format(self.identifier, msg, postfix)
-end
-
--- Throws an error, passing additional arguments to `string.format`.
-function ErrorBuilder:throw(msg, ...)
-	error(self:build(msg, arg))
+	error(("libuix->%s: %s%s"):format(self.identifier, msg, postfix))
 end
 
 -- Makes an assertion and throws an error if it fails.
@@ -154,7 +168,7 @@ end
 -- arguments passed to this function.
 local function enforce_types(rules, ...)
 	local err = ErrorBuilder:new("enforce_types")
-	err:set_postfix("Rules = %s; Arguments = %s", dump(rules), dump(arg))
+	err:set_postfix(function() return ("Rules = %s; Arguments = %s"):format(dump(rules), dump(arg)) end)
 
 	-- Check if argument is required
 	local function is_required(rule)
@@ -199,9 +213,9 @@ local function enforce_array(tbl, expected)
 
 	local err = ErrorBuilder:new("enforce_array")
 	if expected then
-		err:set_postfix("Expected Item Type = %s; Table = %s", expected, dump(tbl))
+		err:set_postfix(function() ("Expected Item Type = %s; Table = %s"):format(expected, dump(tbl)) end)
 	else
-		err:set_postfix("Table = %s", dump(tbl))
+		err:set_postfix(function() ("Table = %s"):format(dump(tbl)) end)
 	end
 
 	-- Check table
@@ -228,7 +242,7 @@ local function validate_rules(rules)
 	enforce_types({"table"}, rules)
 
 	local err = ErrorBuilder:new("validate_rules")
-	err:set_postfix("Rules = %s", dump(rules))
+	err:set_postfix(function() ("Rules = %s"):format(dump(rules)) end)
 
 	err:assert(table.count(rules) > 0, "'rules' argument (no. 1), a table, must contain at least one rule")
 
@@ -258,7 +272,9 @@ function table.constrain(tbl, rules, strict)
 	end
 
 	local err = ErrorBuilder:new("table.constrain")
-	err:set_postfix("Table = %s; Rules = %s; Strict Mode = %s", dump(tbl), dump(rules), tostring(strict))
+	err:set_postfix(function()
+		("Table = %s; Rules = %s; Strict Mode = %s"):format(dump(tbl), dump(rules), tostring(strict))
+	end)
 
 	-- Validate rules
 	validate_rules(rules)

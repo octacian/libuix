@@ -168,7 +168,7 @@ describe("enforce_array", function()
 		assert.has_no.error(function() enforce_array({1, 4, 8}, "number") end)
 		assert.has_no.error(function() enforce_array({TestClass:new()}, "TestClass") end)
 		assert.has_error(function() enforce_array(false, {"hello", true, 12.8}, "string") end,
-			"libuix->enforce_array: entry #2 must be a string (found true)")
+			"libuix->enforce_array: entry #2 must be a string (found boolean)")
 		assert.has_error(function() enforce_array({2}, "string") end)
 	end)
 end)

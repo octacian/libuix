@@ -137,21 +137,21 @@ end)
 
 describe("enforce_types", function()
 	local function test_func(name, verbose)
-		enforce_types(false, {"string", "boolean?"}, name, verbose)
+		enforce_types({"string", "boolean?"}, name, verbose)
 	end
 
 	it("checks the types of function arguments", function()
 		assert.has_no.error(function() test_func("John Doe") end)
 		assert.has_no.error(function() test_func("John Doe", true) end)
-		assert.has_no.error(function() enforce_types(true, {"string"}, "Hello") end)
+		assert.has_no.error(function() enforce_types({"string"}, "Hello") end)
 		assert.has_no.error(function() enforce_types({"TestClass"}, TestClass:new()) end)
 		assert.has_error(function() test_func(81) end, "libuix->enforce_types: argument #1 must be a string (found number)")
 		assert.has_error(function() test_func("John Doe", 15) end,
 			"libuix->enforce_types: argument #2 must be a boolean (found number)")
 		assert.has_error(function() test_func(nil, 15) end, "libuix->enforce_types: argument #1 is required")
-		assert.has_error(function() enforce_types(false, {"string", "number"}, "Hello") end,
+		assert.has_error(function() enforce_types({"string", "number"}, "Hello") end,
 			"libuix->enforce_types: argument #2 is required")
-		assert.has_error(function() enforce_types(false, {"string"}, "Hello", 85) end,
+		assert.has_error(function() enforce_types({"string"}, "Hello", 85) end,
 			"libuix->enforce_types: found 2 argument(s) and only 1 rule(s)")
 	end)
 end)
@@ -159,7 +159,7 @@ end)
 describe("enforce_array", function()
 	it("makes sure a table contains only numerically-indexed entries", function()
 		assert.has_no.error(function() enforce_array({"hello", 28, true}) end)
-		assert.has_error(function() enforce_array(false, {"world", false, name = "John Doe"}) end,
+		assert.has_error(function() enforce_array({"world", false, name = "John Doe"}) end,
 			"libuix->enforce_array: found non-numerically indexed entry at \"name\" (contains: \"John Doe\")")
 		assert.has_error(function() enforce_array({show = false}) end)
 	end)
@@ -167,7 +167,7 @@ describe("enforce_array", function()
 	it("conforms array entries to a single type", function()
 		assert.has_no.error(function() enforce_array({1, 4, 8}, "number") end)
 		assert.has_no.error(function() enforce_array({TestClass:new()}, "TestClass") end)
-		assert.has_error(function() enforce_array(false, {"hello", true, 12.8}, "string") end,
+		assert.has_error(function() enforce_array({"hello", true, 12.8}, "string") end,
 			"libuix->enforce_array: entry #2 must be a string (found boolean)")
 		assert.has_error(function() enforce_array({2}, "string") end)
 	end)

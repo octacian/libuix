@@ -59,18 +59,16 @@ function Element:__index(key)
 		local raw_value = raw_variation[key]
 		if type(raw_value) == "function" then
 			return function(...)
-				local args = table.copy(arg)
 				local include_self = false
 				if arg.n > 0 and tostring(arg[1]) == tostring(self) then
 					include_self = true
-					args[1] = nil
+					table.remove(arg, 1)
 				end
-				args.n = nil
 
 				if include_self then
-					return raw_value(raw_variation, unpack(table.reorder(args)))
+					return raw_value(raw_variation, unpack(arg))
 				else
-					return raw_value(unpack(args))
+					return raw_value(unpack(arg))
 				end
 			end
 		end

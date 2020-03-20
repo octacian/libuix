@@ -15,7 +15,12 @@ function ErrorBuilder:new(func_identifier, verbose, include_traceback)
 	assert(include_traceback == nil or type(include_traceback) == "boolean", ("libuix->ErrorBuilder:new(): argument 2 "
 		.. "must be a boolean or nil (found %s)\n\n"):format(type(include_traceback)) .. debug.traceback())
 
-	if verbose == nil then verbose = true end
+	if verbose == nil then
+		if os.getenv("MODE") == "UNIT_TEST" then
+			verbose = false
+		else verbose = true end
+	end
+
 	if include_traceback == nil then include_traceback = true end
 
 	local instance = {
@@ -33,8 +38,7 @@ function ErrorBuilder:set_postfix(msg, ...)
 	assert(type(msg) == "string", ("libuix->ErrorBuilder:set_postfix(): argument 1 must be a string (found %s)\n\n")
 		:format(type(msg)) .. debug.traceback())
 
-	local args = table.copy(arg)
-	if args.n > 0 then msg = msg:format(unpack(arg)) end
+	if arg.n > 0 then msg = msg:format(unpack(arg)) end
 	self.postfix = msg
 end
 
@@ -43,8 +47,7 @@ function ErrorBuilder:build(msg, arg)
 	assert(type(msg) == "string", ("libuix->ErrorBuilder:throw(): argument 1 must be a string (found %s)\n\n")
 		:format(type(msg)) .. debug.traceback())
 
-	local args = table.copy(arg)
-	if args.n > 0 then msg = msg:format(unpack(arg)) end
+	if arg.n > 0 then msg = msg:format(unpack(arg)) end
 
 	local postfix = ""
 	if self.verbose then
@@ -146,21 +149,12 @@ local function check_type(value, expected)
 end
 
 -- Enforces a specific set of types for function arguments. `types` is an array-equivalent and should include then names
--- of valid types. Arguments may be made optional by appending `?` (a question mark) to the type name. Setting `verbose`
--- to false prevents stack traces and rule and argument dumps from being included in error messages. Arguments to check
--- are passed to the end of the function. The order of items in `types` corresponds to the order of the function
+-- of valid types. Arguments may be made optional by appending `?` (a question mark) to the type name. Arguments to
+-- check are passed to the end of the function. The order of items in `types` corresponds to the order of the function
 -- arguments passed to this function.
-local function enforce_types(verbose, rules, ...)
-	local args = table.copy(arg)
-	args.n = nil
-	if type(verbose) == "table" then
-		table.insert(args, 1, rules)
-		rules = verbose
-		verbose = true
-	end
-
-	local err = ErrorBuilder:new("enforce_types", verbose)
-	err:set_postfix("Rules = %s; Arguments = %s", dump(rules), dump(args))
+local function enforce_types(rules, ...)
+	local err = ErrorBuilder:new("enforce_types")
+	err:set_postfix("Rules = %s; Arguments = %s", dump(rules), dump(arg))
 
 	-- Check if argument is required
 	local function is_required(rule)
@@ -181,7 +175,7 @@ local function enforce_types(verbose, rules, ...)
 			.. "(found %s '%s')", type(key), key)
 		err:assert(type(raw_rule) == "string", "expected rules value to be a string (found rules[%s] = '%s')", key, raw_rule)
 
-		local value = args[key]
+		local value = arg[key]
 		local rule, required = is_required(raw_rule)
 
 		-- if the argument is required and nil, error
@@ -194,22 +188,16 @@ local function enforce_types(verbose, rules, ...)
 	end
 
 	-- if there are more arguments than rules, error
-	if table.count(args) > table.count(rules) then
-		err:throw("found %d argument(s) and only %d rule(s)", table.count(args), table.count(rules))
+	if #arg > #rules then
+		err:throw("found %d argument(s) and only %d rule(s)", #arg, #rules)
 	end
 end
 
 -- Ensures that a table contains only numerical indexes and optionally checks the type of each item within the table.
-local function enforce_array(verbose, tbl, expected)
-	if type(verbose) == "table" then
-		expected = tbl
-		tbl = verbose
-		verbose = true
-	end
+local function enforce_array(tbl, expected)
+	enforce_types({"table", "string?"}, tbl, expected)
 
-	enforce_types({"boolean", "table", "string?"}, verbose, tbl, expected)
-
-	local err = ErrorBuilder:new("enforce_array", verbose)
+	local err = ErrorBuilder:new("enforce_array")
 	if expected then
 		err:set_postfix("Expected Item Type = %s; Table = %s", expected, dump(tbl))
 	else
@@ -228,8 +216,7 @@ local function enforce_array(verbose, tbl, expected)
 	end
 end
 
--- Validates `rules` table used by `enforce_types` and `table.constrain`. An error is raised if invalid. Unless verbose
--- is disabled, a dump of the rules table and the stack traceback is included in the error message.
+-- Validates `rules` table used by `enforce_types` and `table.constrain`. An error is raised if invalid.
 --[[ Rules Example Structure: {
 	{
 		"show", -- This is the name of a table key.
@@ -237,11 +224,10 @@ end
 		required = false, -- Overrides the default of true to make the key optional.
 	}
 } ]]
-local function validate_rules(rules, verbose)
-	enforce_types({"table", "boolean?"}, rules, verbose)
-	if verbose == nil then verbose = true end
+local function validate_rules(rules)
+	enforce_types({"table"}, rules)
 
-	local err = ErrorBuilder:new("validate_rules", verbose)
+	local err = ErrorBuilder:new("validate_rules")
 	err:set_postfix("Rules = %s", dump(rules))
 
 	err:assert(table.count(rules) > 0, "'rules' argument (no. 1), a table, must contain at least one rule")
@@ -258,11 +244,9 @@ local function validate_rules(rules, verbose)
 end
 
 -- Constrains the keys within a table to meet specific requirements. Unless strict is false, an error is thrown if any
--- keys are found that are not in the rules table. Unless verbose is false a dump of the target table, the rules table,
--- and the stack traceback is included in the error message.
-function table.constrain(tbl, rules, strict, verbose)
-	enforce_types({"table", "table", "boolean?", "boolean?"}, tbl, rules, strict, verbose)
-	if verbose == nil then verbose = true end
+-- keys are found that are not in the rules table.
+function table.constrain(tbl, rules, strict)
+	enforce_types({"table", "table", "boolean?"}, tbl, rules, strict)
 
 	-- Returns a rule by key name.
 	local function get_rule(key)
@@ -273,11 +257,11 @@ function table.constrain(tbl, rules, strict, verbose)
 		end
 	end
 
-	local err = ErrorBuilder:new("table.constrain", verbose)
+	local err = ErrorBuilder:new("table.constrain")
 	err:set_postfix("Table = %s; Rules = %s; Strict Mode = %s", dump(tbl), dump(rules), tostring(strict))
 
 	-- Validate rules
-	validate_rules(rules, verbose)
+	validate_rules(rules)
 
 	-- Compare table to rules
 	for key, value in pairs(tbl) do
@@ -440,14 +424,12 @@ function Queue:__index(key)
 	end
 
 	return function(...)
-		local args = table.copy(arg)
 		local include_self = false
 		if arg.n > 0 and tostring(arg[1]) == tostring(self) then
 			include_self = true
-			args[1] = nil
+			table.remove(arg, 1)
 		end
-		args.n = nil
-		table.insert(self, {key = key, include_self = include_self, args = table.reorder(args)})
+		table.insert(self, {key = key, include_self = include_self, arg = arg})
 	end
 end
 
@@ -459,9 +441,9 @@ function Queue:_start(target)
 		end
 
 		if item.include_self then
-			target[item.key](target, unpack(item.args))
+			target[item.key](target, unpack(item.arg))
 		else
-			target[item.key](unpack(item.args))
+			target[item.key](unpack(item.arg))
 		end
 		self[key] = nil
 	end

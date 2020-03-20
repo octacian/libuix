@@ -34,7 +34,7 @@ if filter ~= "" then
 	pattern = ("--pattern='%s_spec'"):format(filter)
 end
 
-exec(("busted --lua=lua5.1 --coverage %s ."):format(pattern))
+exec(("env MODE=UNIT_TEST busted --lua=lua5.1 --coverage %s ."):format(pattern))
 
 local file = io.open(STATS_FILE_NAME, "r")
 local lines = {}

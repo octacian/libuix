@@ -58,7 +58,7 @@ function ErrorBuilder:throw(msg, ...)
 			.. debug.traceback())
 	end
 
-	if arg.n > 0 then msg = msg:format(unpack(arg)) end
+	if select("#", ...) > 0 then msg = msg:format(...) end
 
 	local postfix = ""
 	if self.verbose then
@@ -79,7 +79,7 @@ end
 
 -- Makes an assertion and throws an error if it fails.
 function ErrorBuilder:assert(assertion, msg, ...)
-	if not assertion then self:throw(msg, unpack(arg)) end
+	if not assertion then self:throw(msg, ...) end
 end
 
 ---------------------
@@ -167,6 +167,7 @@ end
 -- check are passed to the end of the function. The order of items in `types` corresponds to the order of the function
 -- arguments passed to this function.
 local function enforce_types(rules, ...)
+	local arg = {...}
 	local err = ErrorBuilder:new("enforce_types")
 	err:set_postfix(function() return ("Rules = %s; Arguments = %s"):format(dump(rules), dump(arg)) end)
 
@@ -312,16 +313,6 @@ function table.constrain(tbl, rules, strict)
 	end
 end
 
--- Removes index gaps from an array.
-function table.reorder(tbl)
-	enforce_array(tbl)
-	local out = {}
-	for _, val in pairs(tbl) do
-		table.insert(out, val)
-	end
-	return out
-end
-
 if not _G["dump"] then
 	-- [function] Dump
 	function dump(val, indent, tables_printed)
@@ -440,8 +431,9 @@ function Queue:__index(key)
 	end
 
 	return function(...)
+		local arg = {...}
 		local include_self = false
-		if arg.n > 0 and tostring(arg[1]) == tostring(self) then
+		if #arg > 0 and tostring(arg[1]) == tostring(self) then
 			include_self = true
 			table.remove(arg, 1)
 		end
@@ -480,7 +472,6 @@ return {
 	constrain = table.constrain,
 	enforce_types = enforce_types,
 	enforce_array = enforce_array,
-	reorder = table.reorder,
 	dump = dump,
 	static_table = static_table,
 	make_class = make_class,

@@ -12,7 +12,6 @@ local constrain = require("utility").constrain
 local static_table = require("utility").static_table
 local enforce_types = require("utility").enforce_types
 local enforce_array = require("utility").enforce_array
-local reorder = require("utility").reorder
 local make_class = require("utility").make_class
 local Queue = require("utility").Queue
 
@@ -170,13 +169,6 @@ describe("enforce_array", function()
 		assert.has_error(function() enforce_array({"hello", true, 12.8}, "string") end,
 			"libuix->enforce_array: entry #2 must be a string (found boolean)")
 		assert.has_error(function() enforce_array({2}, "string") end)
-	end)
-end)
-
-describe("reorder", function()
-	it("removes index gaps from an array", function()
-		local one = {[2] = "hello", [7] = 19}
-		assert.are.same({"hello", 19}, reorder(one))
 	end)
 end)
 

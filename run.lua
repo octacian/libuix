@@ -1,4 +1,4 @@
-#! /usr/bin/lua5.1
+#! /usr/bin/luajit
 
 --[[ run.lua usage
 	- Run with no arguments to run unit tests and generate coverage reports.
@@ -34,7 +34,7 @@ if filter ~= "" then
 	pattern = ("--pattern='%s_spec'"):format(filter)
 end
 
-exec(("env MODE=UNIT_TEST busted --lua=lua5.1 --coverage %s ."):format(pattern))
+exec(("env MODE=UNIT_TEST busted --lua=luajit --coverage %s ."):format(pattern))
 
 local file = io.open(STATS_FILE_NAME, "r")
 local lines = {}

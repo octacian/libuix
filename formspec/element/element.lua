@@ -59,8 +59,9 @@ function Element:__index(key)
 		local raw_value = raw_variation[key]
 		if type(raw_value) == "function" then
 			return function(...)
+				local arg = {...}
 				local include_self = false
-				if arg.n > 0 and tostring(arg[1]) == tostring(self) then
+				if #arg > 0 and tostring(arg[1]) == tostring(self) then
 					include_self = true
 					table.remove(arg, 1)
 				end

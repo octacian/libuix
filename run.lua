@@ -46,8 +46,9 @@ local lines = {}
 local retain = 0
 for line in file:lines() do
 	-- if line is a header and the entry should be retained, retain 2 lines (this and the next)
-	if line:find(".lua") and not (line:find("/usr/") or line:find("_spec")) and (filter == "" or ends_with(line, filter)) then
-		retain = 2
+	if line:find(".lua") and not (line:find("/usr/") or line:find("_spec"))
+		and (filter == "" or ends_with(line, filter)) then
+			retain = 2
 	end
 
 	-- if a line should be retained, insert it into lines and decrement retainer

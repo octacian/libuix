@@ -31,13 +31,18 @@ function test(name, expected, fields)
 end
 
 -- TODO: container element.
-test("list", "location;name;2,3;5,5;", { inventory_location = "location", list_name = "name", x = 2, y = 3, w = 5, h = 5 })
-test("list", "location;name;2,3;5,5;0", { inventory_location = "location", list_name = "name", x = 2, y = 3, w = 5, h = 5, starting_item_index = 0 })
+test("list", "location;name;2,3;5,5;",
+	{ inventory_location = "location", list_name = "name", x = 2, y = 3, w = 5, h = 5 })
+test("list", "location;name;2,3;5,5;0",
+	{ inventory_location = "location", list_name = "name", x = 2, y = 3, w = 5, h = 5, starting_item_index = 0 })
 test("listring", "location;name", { inventory_location = "location", list_name = "name" })
 test("listring", "", {})
 test("listcolors", "one;two", { slot_bg_normal = "one", slot_bg_hover = "two" })
 test("listcolors", "one;two;three", { slot_bg_normal = "one", slot_bg_hover = "two", slot_border = "three" })
-test("listcolors", "one;two;three;four;five", { slot_bg_normal = "one", slot_bg_hover = "two", slot_border = "three", tooltip_bgcolor = "four", tooltip_fontcolor = "five" })
+test("listcolors", "one;two;three;four;five", {
+	slot_bg_normal = "one", slot_bg_hover = "two", slot_border = "three",
+	tooltip_bgcolor = "four", tooltip_fontcolor = "five"
+})
 -- TODO: tooltip element, implemented as a field for any elements supporting `name`.
 test("image", "0,0;5,5;img.png", { x = 0, y = 0, w = 5, h = 5, texture_name = "img.png" })
 

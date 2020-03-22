@@ -15,4 +15,7 @@ read_globals = {
 	"dump", "DIR_DELIM", "VoxelArea", "Settings",
 
 	"modpath",
+
+	-- libuix elements
+	"list", "listring", "listcolors", "image", "label",
 }

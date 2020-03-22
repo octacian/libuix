@@ -1,5 +1,5 @@
 local utility = dofile(modpath.."/utility.lua")
-local formspec = dofile(modpath.."/formspec/init.lua")
+local manager = dofile(modpath.."/formspec/manager.lua")
 
 -----------------------
 -- UIXInstance Class --
@@ -12,7 +12,7 @@ function UIXInstance:new(modname)
 
 	local instance = {modname = modname}
 	setmetatable(instance, UIXInstance)
-	instance.formspec = formspec.manager:new(instance)
+	instance.formspec = manager:new(instance)
 
 	return instance -- TODO: This should use the static_table utility, however, it currently clashes with `make_class`.
 end

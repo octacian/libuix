@@ -1,3 +1,8 @@
+local MODE = os.getenv("MODE")
+local DEBUG = os.getenv("DEBUG")
+
+if DEBUG == "TRUE" then DEBUG = true else DEBUG = false end
+
 ------------------------
 -- ErrorBuilder Class --
 ------------------------
@@ -24,7 +29,7 @@ function ErrorBuilder:new(func_identifier, verbose, include_traceback)
 	end
 
 	if verbose == nil then
-		if os.getenv("MODE") == "UNIT_TEST" then
+		if MODE == "UNIT_TEST" then
 			verbose = false
 		else verbose = true end
 	end
@@ -146,6 +151,7 @@ function table.foreach(tbl, func)
 	end
 end
 
+-- TODO: Optimize by not calling stuff like getmetatable repeatedly
 -- Returns the type of some value, giving classes first-level types.
 local function get_type(value)
 	if type(value) == "table" and getmetatable(value)
@@ -167,6 +173,8 @@ end
 -- check are passed to the end of the function. The order of items in `types` corresponds to the order of the function
 -- arguments passed to this function.
 local function enforce_types(rules, ...)
+	if not DEBUG then return end
+
 	local arg = {...}
 	local err = ErrorBuilder:new("enforce_types")
 	err:set_postfix(function() return ("Rules = %s; Arguments = %s"):format(dump(rules), dump(arg)) end)
@@ -210,6 +218,7 @@ end
 
 -- Ensures that a table contains only numerical indexes and optionally checks the type of each item within the table.
 local function enforce_array(tbl, expected)
+	if not DEBUG then return end
 	enforce_types({"table", "string?"}, tbl, expected)
 
 	local err = ErrorBuilder:new("enforce_array")
@@ -261,6 +270,7 @@ end
 -- Constrains the keys within a table to meet specific requirements. Unless strict is false, an error is thrown if any
 -- keys are found that are not in the rules table.
 function table.constrain(tbl, rules, strict)
+	if not DEBUG then return end
 	enforce_types({"table", "table", "boolean?"}, tbl, rules, strict)
 
 	-- Returns a rule by key name.
@@ -442,7 +452,7 @@ function Queue:__index(key)
 end
 
 function Queue:_start(target)
-	enforce_types({"table"}, target)
+	if DEBUG then enforce_types({"table"}, target) end
 	for key, item in ipairs(self) do
 		if not target[item.key] then
 			error(("libuix->Queue:_start(): attempt to call field '%s' (a nil value)"):format(item.key))
@@ -462,6 +472,8 @@ end
 -------------
 
 return {
+	MODE = MODE,
+	DEBUG = DEBUG,
 	ErrorBuilder = ErrorBuilder,
 	copy = table.copy,
 	contains = table.contains,

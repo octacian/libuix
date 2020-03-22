@@ -114,7 +114,7 @@ function Variation:render(model)
 		return ""
 	end
 
-	if not self:validate(self.def) then return end
+	if utility.DEBUG and not self:validate(self.def) then return end
 
 	local field_map = self:map_fields(self.def)
 	local fieldstring = ""

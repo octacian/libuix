@@ -214,9 +214,9 @@ local function enforce_array(tbl, expected)
 
 	local err = ErrorBuilder:new("enforce_array")
 	if expected then
-		err:set_postfix(function() ("Expected Item Type = %s; Table = %s"):format(expected, dump(tbl)) end)
+		err:set_postfix(function() return ("Expected Item Type = %s; Table = %s"):format(expected, dump(tbl)) end)
 	else
-		err:set_postfix(function() ("Table = %s"):format(dump(tbl)) end)
+		err:set_postfix(function() return ("Table = %s"):format(dump(tbl)) end)
 	end
 
 	-- Check table
@@ -243,7 +243,7 @@ local function validate_rules(rules)
 	enforce_types({"table"}, rules)
 
 	local err = ErrorBuilder:new("validate_rules")
-	err:set_postfix(function() ("Rules = %s"):format(dump(rules)) end)
+	err:set_postfix(function() return ("Rules = %s"):format(dump(rules)) end)
 
 	err:assert(table.count(rules) > 0, "'rules' argument (no. 1), a table, must contain at least one rule")
 
@@ -274,7 +274,7 @@ function table.constrain(tbl, rules, strict)
 
 	local err = ErrorBuilder:new("table.constrain")
 	err:set_postfix(function()
-		("Table = %s; Rules = %s; Strict Mode = %s"):format(dump(tbl), dump(rules), tostring(strict))
+		return ("Table = %s; Rules = %s; Strict Mode = %s"):format(dump(tbl), dump(rules), tostring(strict))
 	end)
 
 	-- Validate rules

@@ -9,7 +9,7 @@ local Form = utility.make_class("Form")
 -- Creates a new Form instance.
 function Form:new(parent, name, options, elements, model)
 	utility.enforce_types({"FormspecManager", "string", "table", "table", "Model"}, parent, name, options, elements, model)
-	utility.enforce_array(elements, "Element")
+	utility.enforce_array(elements, "Variation")
 
 	table.constrain(options, {
 		{"formspec_version", "number", required = false},

@@ -24,17 +24,12 @@ end
 -- Adds a variation to the element.
 function Element:add_variation(fields, options)
 	if utility.DEBUG then utility.enforce_types({"table", "table?"}, fields, options) end
-	self.variations[#self.variations + 1] = Variation:new(self, fields, options)
+	self.variations[#self.variations + 1] = Variation:new(self.parent, self.name, fields, options)
 end
 
 -- Chooses a single variation based on an arbitrary definition and returns it directly.
 function Element:__call(def)
 	if utility.DEBUG then utility.enforce_types({"table"}, def) end
-
-	-- if there is only one variation, return it immediately
-	if #self.variations == 1 then
-		return self.variations[1](def)
-	end
 
 	-- Loop over variations and try to find one that accepts the definition as valid.
 	local variation = table.foreach(self.variations, function(variation)

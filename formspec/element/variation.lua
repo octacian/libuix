@@ -7,11 +7,13 @@ local utility = dofile(modpath.."/utility.lua")
 local Variation = utility.make_class("Variation")
 
 -- Creates a new skeleton instance of the variation.
-function Variation:new(parent, fields, options)
-	if utility.DEBUG then utility.enforce_types({"Element", "table", "table?"}, parent, fields, options) end
+function Variation:new(parent, name, fields, options)
+	if utility.DEBUG then utility.enforce_types({"FormspecManager", "string", "table", "table?"},
+		parent, name, fields, options) end
 
 	local instance = {
 		parent = parent,
+		name = name,
 		fields = fields,
 		options = options
 	}
@@ -23,7 +25,7 @@ end
 -- Duplicates and populates a skeleton instance with an arbitrary definition, returning the newly created duplicate.
 function Variation:__call(def, elements)
 	if utility.DEBUG then utility.enforce_types({"table", "table?"}, def, elements) end
-	local instance = Variation:new(self.parent, self.fields, self.options)
+	local instance = Variation:new(self.parent, self.name, self.fields, self.options)
 	instance.def = def
 	instance.field_map = instance:map_fields()
 	instance:validate()
@@ -60,13 +62,13 @@ function Variation:validate()
 
 		-- if def_field is still nil, the field wasn't defined, throw an error
 		if def_field == nil and field.required ~= false then
-			error(("validate: %s property '%s' is not optional"):format(self.parent.name, field[1]))
+			error(("validate: %s property '%s' is not optional"):format(self.name, field[1]))
 		end
 
 		-- if the value of the data stored in the definition field does not match the expected type, throw an error
 		if def_field ~= nil and type(def_field) ~= field[2] then
 			error(("validate: %s property '%s' must be a %s (found '%s')")
-				:format(self.parent.name, field[1], field[2], type(def_field)))
+				:format(self.name, field[1], field[2], type(def_field)))
 		end
 	end
 
@@ -74,7 +76,7 @@ function Variation:validate()
 	-- Loop over definition to check for extra keys
 	for def_key, _ in pairs(self.def) do
 		if not inverted_map[def_key] then
-			error(("validate: %s does not support property '%s'"):format(self.parent.name, def_key))
+			error(("validate: %s does not support property '%s'"):format(self.name, def_key))
 		end
 	end
 
@@ -104,7 +106,7 @@ function Variation:render(model)
 
 	fieldstring = fieldstring:sub(1, -2)
 
-	return self.parent.name .. "[" .. fieldstring .. "]"
+	return self.name .. "[" .. fieldstring .. "]"
 end
 
 -------------

@@ -1,11 +1,11 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
-local Element = require("tests/mock").Element
+local manager = require("tests/mock").FormspecManager:new()
 local Variation = require("formspec/element/variation")
 local Model = require("formspec/model")
 
-local Example = Variation:new(Element:new("variation_spec"), {
+local Example = Variation:new(manager, "variation_spec", {
 	{ "x",  "number", separator = "," },
 	{ "name", "string" },
 	{ "y", "number", required = false },
@@ -62,7 +62,7 @@ describe("Variation", function()
 	end)
 
 	it("correctly handles boolean fields", function()
-		Example = Variation:new(Element:new("boolean_spec"), {
+		Example = Variation:new(manager, "boolean_spec", {
 			{ "option", "boolean" }
 		})
 

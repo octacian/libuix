@@ -1,4 +1,5 @@
 local utility = dofile(modpath.."/utility.lua")
+local Variation = dofile(modpath.."/formspec/element/variation.lua")
 local Element = dofile(modpath.."/formspec/element/element.lua")
 
 -- Default field definitions.
@@ -19,7 +20,7 @@ Builder.default_fields = default_fields -- Defaults for use when defining elemen
 
 -- Creates a new builder instance with its own element store.
 function Builder:new(parent)
-	utility.enforce_types({"FormspecManager"}, parent)
+	if utility.DEBUG then utility.enforce_types({"FormspecManager"}, parent) end
 
 	local instance = {
 		parent = parent,
@@ -34,28 +35,36 @@ end
 -- Primary Builder --
 ---------------------
 
+local insert = table.insert
 -- Adds a generic element to the builder.
 function Builder:add(name, positioned, resizable, fields, options)
-	utility.enforce_types({"string", "boolean", "boolean", "table?", "table?"},
-		name, positioned, resizable, fields, options)
+	if utility.DEBUG then utility.enforce_types({"string", "boolean", "boolean", "table?", "table?"},
+		name, positioned, resizable, fields, options) end
 
 	if not fields then fields = {} end
 
 	if positioned then
-		table.insert(fields, 1, default_fields.x)
-		table.insert(fields, 2, default_fields.y)
+		insert(fields, 1, default_fields.x)
+		insert(fields, 2, default_fields.y)
 	end
 
 	if resizable then
 		local location = positioned and 3 or 1
-		table.insert(fields, location, default_fields.w)
-		table.insert(fields, location + 1, default_fields.h)
+		insert(fields, location, default_fields.w)
+		insert(fields, location + 1, default_fields.h)
 	end
 
-	table.insert(fields, default_fields._if)
+	insert(fields, default_fields._if)
 
+	-- if this is a new element, insert a Variation instance
 	if not self.elements[name] then
-		self.elements[name] = Element:new(self.parent, name)
+		self.elements[name] = Variation:new(self.parent, name, fields, options)
+		return
+	-- if this element already exists but there is only a Variation entry, convert it to an Element
+	elseif self.elements[name] and utility.type(self.elements[name]) == "Variation" then
+		local element = Element:new(self.parent, name)
+		element:add_variation(self.elements[name].fields, self.elements[name].options)
+		self.elements[name] = element
 	end
 
 	self.elements[name]:add_variation(fields, options)

@@ -38,14 +38,9 @@ describe("Builder", function()
 				builder_element = {
 					parent = {modname = "builder_spec"},
 					name = "builder_element",
-					variations = {
-						{
-							fields = {instance.default_fields._if},
-						}
-					}
+					fields = {instance.default_fields._if},
 				}
 			}
-			expected.builder_element.variations[1].parent = expected.builder_element
 
 			assert.are.same(expected, instance.elements)
 		end)
@@ -56,7 +51,7 @@ describe("Builder", function()
 			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:positioned("builder_element", {})
 			assert.are.same({instance.default_fields.x, instance.default_fields.y, instance.default_fields._if},
-				instance.elements.builder_element.variations[1].fields)
+				instance.elements.builder_element.fields)
 		end)
 	end)
 
@@ -65,7 +60,7 @@ describe("Builder", function()
 			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:resizable("builder_element", {})
 			assert.are.same({instance.default_fields.w, instance.default_fields.h, instance.default_fields._if},
-				instance.elements.builder_element.variations[1].fields)
+				instance.elements.builder_element.fields)
 		end)
 	end)
 
@@ -76,7 +71,7 @@ describe("Builder", function()
 			assert.are.same({
 				instance.default_fields.x, instance.default_fields.y, instance.default_fields.w, instance.default_fields.h,
 				instance.default_fields._if
-			}, instance.elements.builder_element.variations[1].fields)
+			}, instance.elements.builder_element.fields)
 		end)
 	end)
 end)

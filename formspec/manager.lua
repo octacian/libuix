@@ -12,7 +12,7 @@ local FormspecManager = utility.make_class("FormspecManager")
 
 -- Creates a new FormspecManager instance.
 function FormspecManager:new(parent)
-	utility.enforce_types({"UIXInstance"}, parent)
+	if utility.DEBUG then utility.enforce_types({"UIXInstance"}, parent) end
 	local instance = { parent = parent, forms = {} }
 	setmetatable(instance, FormspecManager)
 
@@ -34,7 +34,7 @@ function FormspecManager:__call(name)
 			-- Accept data model table.
 			return function(model)
 				setfenv(2, getmetatable(self.elements).__index) -- Remove Elements from the global environment.
-				table.insert(self.forms, Form:new(self, name, options, elements, Model:new(model)))
+				self.forms[#self.forms + 1] = Form:new(self, name, options, elements, Model:new(model))
 			end
 		end
 	end
@@ -42,8 +42,8 @@ end
 
 -- Gets a formspec by name from the instance.
 function FormspecManager:get(name)
-	utility.enforce_types({"string"}, name)
-	for _, form in ipairs(self.forms) do
+	if utility.DEBUG then utility.enforce_types({"string"}, name) end
+	for _, form in pairs(self.forms) do
 		if form.name == name then
 			return form
 		end
@@ -52,8 +52,8 @@ end
 
 -- Gets a formspec index by name from the instance.
 function FormspecManager:get_index(name)
-	utility.enforce_types({"string"}, name)
-	for index, form in ipairs(self.forms) do
+	if utility.DEBUG then utility.enforce_types({"string"}, name) end
+	for index, form in pairs(self.forms) do
 		if form.name == name then
 			return index
 		end

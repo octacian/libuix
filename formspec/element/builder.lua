@@ -6,7 +6,8 @@ local default_fields = {
 	x = {"x", "number", separator = ","},
 	y = {"y", "number"},
 	w = {"w", "number", separator = ","},
-	h = {"h", "number"}
+	h = {"h", "number"},
+	_if = {"_if", "string", required = false, internal = true}
 }
 
 -------------------
@@ -50,6 +51,8 @@ function Builder:add(name, positioned, resizable, fields, options)
 		table.insert(fields, location, default_fields.w)
 		table.insert(fields, location + 1, default_fields.h)
 	end
+
+	table.insert(fields, default_fields._if)
 
 	if not self.elements[name] then
 		self.elements[name] = Element:new(self.parent, name)

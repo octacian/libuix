@@ -40,7 +40,7 @@ describe("Builder", function()
 					name = "builder_element",
 					variations = {
 						{
-							fields = {},
+							fields = {instance.default_fields._if},
 						}
 					}
 				}
@@ -55,7 +55,7 @@ describe("Builder", function()
 		it("adds an element with default fields (x, y: number) to the builder", function()
 			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:positioned("builder_element", {})
-			assert.are.same({instance.default_fields.x, instance.default_fields.y},
+			assert.are.same({instance.default_fields.x, instance.default_fields.y, instance.default_fields._if},
 				instance.elements.builder_element.variations[1].fields)
 		end)
 	end)
@@ -64,7 +64,7 @@ describe("Builder", function()
 		it("adds an element with default fields (w, h: number) to the builder", function()
 			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:resizable("builder_element", {})
-			assert.are.same({instance.default_fields.w, instance.default_fields.h},
+			assert.are.same({instance.default_fields.w, instance.default_fields.h, instance.default_fields._if},
 				instance.elements.builder_element.variations[1].fields)
 		end)
 	end)
@@ -74,7 +74,8 @@ describe("Builder", function()
 			instance = Builder:new(FormspecManager:new("builder_spec"))
 			instance:rect("builder_element", {})
 			assert.are.same({
-				instance.default_fields.x, instance.default_fields.y, instance.default_fields.w, instance.default_fields.h
+				instance.default_fields.x, instance.default_fields.y, instance.default_fields.w, instance.default_fields.h,
+				instance.default_fields._if
 			}, instance.elements.builder_element.variations[1].fields)
 		end)
 	end)

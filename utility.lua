@@ -129,11 +129,20 @@ end
 
 -- Returns index if an array-equivalent table contains some value.
 function table.contains(tbl, value)
-	for index, tbl_value in ipairs(tbl) do
+	for index, tbl_value in pairs(tbl) do
 		if tbl_value == value then
 			return index
 		end
 	end
+end
+
+-- Inverts a table.
+function table.invert(tbl)
+	local inverted = {}
+	for key, value in pairs(tbl) do
+		inverted[value] = key
+	end
+	return inverted
 end
 
 -- Returns the number of items in a table.
@@ -476,6 +485,7 @@ return {
 	DEBUG = DEBUG,
 	ErrorBuilder = ErrorBuilder,
 	copy = table.copy,
+	invert = table.invert,
 	contains = table.contains,
 	count = table.count,
 	foreach = table.foreach,

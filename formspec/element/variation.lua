@@ -6,9 +6,9 @@ local utility = dofile(modpath.."/utility.lua")
 
 local Variation = utility.make_class("Variation")
 
--- Creates a new instance of the variation.
+-- Creates a new skeleton instance of the variation.
 function Variation:new(parent, fields, options)
-	utility.enforce_types({"Element", "table", "table?"}, parent, fields, options)
+	if utility.DEBUG then utility.enforce_types({"Element", "table", "table?"}, parent, fields, options) end
 
 	local instance = {
 		parent = parent,
@@ -20,115 +20,91 @@ function Variation:new(parent, fields, options)
 	return instance
 end
 
--- Returns a new instance of the variation, populated with its name, fields,
--- options, and now its definition and, in some cases, elements list.
+-- Duplicates and populates a skeleton instance with an arbitrary definition, returning the newly created duplicate.
 function Variation:__call(def, elements)
-	utility.enforce_types({"table", "table?"}, def, elements)
+	if utility.DEBUG then utility.enforce_types({"table", "table?"}, def, elements) end
 	local instance = Variation:new(self.parent, self.fields, self.options)
 	instance.def = def
-	instance.cache = {}
+	instance.field_map = instance:map_fields()
+	instance:validate()
 	return instance
 end
 
--- Maps the fields passed via the definition to their counterparts in fields.
+-- Returns a map of the indexes of the fields array to the indexes of the definition. Must be called before validate.
 function Variation:map_fields()
-	if self.cache.map_fields then
-		--print("map_fields returning cached map for " .. self.parent.name)
-		return self.cache.map_fields
-	end
-
-	local named_keys = {}
-	local positional_keys = 0
-
-	if not self.def then return end -- TODO: Make sure this NEVER happens.
-	--print("map_fields got self.def: " .. dump(self.def) .. " allowed fields: " .. dump(self.fields))
-	for k, _ in pairs(self.def) do
-		if type(k) == "number" then
-			positional_keys = positional_keys + 1
-		elseif type(k) == "string" and k:sub(1, 1) ~= "_" then
-			table.insert(named_keys, k)
-		end
-	end
-
 	local field_map = {}
 	local positional_keys_used = 0
-	for index, field in ipairs(self.fields) do
-		if table.contains(named_keys, field[1]) then
-			field_map[index] = field[1]
-		else
+	for index, field in pairs(self.fields) do
+		local def_key = field[1]
+		local def_field = self.def[def_key]
+
+		-- if def_field is nil, the field may have been passed as a positional entry
+		if def_field == nil then
 			positional_keys_used = positional_keys_used + 1
-			field_map[index] = positional_keys_used
+			def_key = positional_keys_used
+			def_field = self.def[positional_keys_used]
 		end
 
-		-- Ensure that the field exists in the definition
-		if self.def[field_map[index]] == nil then
-			if field.required ~= false then
-				error(("map_fields: %s property '%s' is not optional"):format(self.parent.name, field[1]))
-			else
-				field_map[index] = nil
-			end
+		if def_field ~= nil then
+			field_map[index] = def_key
 		end
 	end
 
-	self.cache.map_fields = field_map
 	return field_map
 end
 
--- Validates a definition table to variation constraints.
+-- Validates a definition table to variation constraints. Must be called after map_fields.
 function Variation:validate()
-	local internal_properties = {"_if"}
+	for index, field in pairs(self.fields) do
+		local def_field = self.def[self.field_map[index]]
 
-	local field_map = self:map_fields(self.def)
-	for field_key, def_key in pairs(field_map) do
-		if type(self.def[def_key]) ~= self.fields[field_key][2] then
+		-- if def_field is still nil, the field wasn't defined, throw an error
+		if def_field == nil and field.required ~= false then
+			error(("validate: %s property '%s' is not optional"):format(self.parent.name, field[1]))
+		end
+
+		-- if the value of the data stored in the definition field does not match the expected type, throw an error
+		if def_field ~= nil and type(def_field) ~= field[2] then
 			error(("validate: %s property '%s' must be a %s (found '%s')")
-				:format(self.parent.name, self.fields[field_key][1], self.fields[field_key][2], type(self.def[def_key])))
+				:format(self.parent.name, field[1], field[2], type(def_field)))
 		end
 	end
 
-	-- if the definition table has more entries than the field map, there is an extra key
-	if table.count(self.def) > table.count(field_map) then
-		local def = table.copy(self.def)
-		-- Find name of extra key
-		for _, def_key in pairs(field_map) do
-			def[def_key] = nil
-		end
-
-		-- Throw error
-		for key, value in pairs(def) do
-			if not table.contains(internal_properties, key) then
-				error(("validate: %s does not support property '%s' (has type %s)"):format(self.parent.name, key, type(value)))
-			end
+	local inverted_map = table.invert(self.field_map)
+	-- Loop over definition to check for extra keys
+	for def_key, _ in pairs(self.def) do
+		if not inverted_map[def_key] then
+			error(("validate: %s does not support property '%s'"):format(self.parent.name, def_key))
 		end
 	end
 
 	return true
 end
 
--- Renders the variation given a data model.
+-- Renders a variation given a data model.
 function Variation:render(model)
-	utility.enforce_types({"table?"}, model)
+	if utility.DEBUG then utility.enforce_types({"table?"}, model) end
 
 	-- Obey _if visibility control.
 	if self.def._if and not model:_evaluate(self.def._if) then
 		return ""
 	end
 
-	if utility.DEBUG and not self:validate(self.def) then return end
-
-	local field_map = self:map_fields(self.def)
 	local fieldstring = ""
-
-	for index, field in ipairs(self.fields) do
-		local def_index = field_map[index]
-		local value = self.def[def_index] == nil and "" or self.def[def_index]
-		local separator = field.separator and field.separator or ";"
-		fieldstring = fieldstring .. tostring(value) .. separator
+	for index, field in pairs(self.fields) do
+		if field.internal ~= true then
+			local def_index = self.field_map[index]
+			local value = self.def[def_index]
+			if value == nil then value = "" end
+			local separator = field.separator
+			if separator == nil then separator = ";" end
+			fieldstring = fieldstring .. tostring(value) .. separator
+		end
 	end
 
 	fieldstring = fieldstring:sub(1, -2)
 
-	return ("%s[%s]"):format(self.parent.name, fieldstring)
+	return self.parent.name .. "[" .. fieldstring .. "]"
 end
 
 -------------

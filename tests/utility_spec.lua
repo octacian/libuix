@@ -4,6 +4,7 @@ _G.libuix = {}
 local ErrorBuilder = require("utility").ErrorBuilder
 local copy = require("utility").copy
 local contains = require("utility").contains
+local invert = require("utility").invert
 local count = require("utility").count
 local foreach = require("utility").foreach
 local get_type = require("utility").type
@@ -66,6 +67,12 @@ describe("table.contains", function()
 		local tbl = {"hello", 10, true}
 		assert.are.equal(2, contains(tbl, 10))
 		assert.falsy(contains(tbl, 109))
+	end)
+end)
+
+describe("table.invert", function()
+	it("inverts the key-value pairs of a table", function()
+		assert.are.same({[true] = 2, [38] = "hello"}, invert({[2] = true, hello = 38}))
 	end)
 end)
 

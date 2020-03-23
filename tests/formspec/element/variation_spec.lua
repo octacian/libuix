@@ -9,6 +9,7 @@ local Example = Variation:new(Element:new("variation_spec"), {
 	{ "x",  "number", separator = "," },
 	{ "name", "string" },
 	{ "y", "number", required = false },
+	{ "_if", "string", required = false, internal = true },
 })
 
 describe("Variation", function()
@@ -19,23 +20,28 @@ describe("Variation", function()
 			local field_map = instance:map_fields()
 			assert.are.same({1, "name", 2}, field_map)
 		end)
-
-		it("errors if any required fields are missing", function()
-			assert.has_error(function() Example({ 20, y = 84 }):map_fields() end)
-			assert.has_no.error(function() Example({ 20, name = "Yay! It's broken somewhere else!" }) end)
-		end)
 	end)
 
 	describe("validate", function()
+		it("errors if any required fields are missing", function()
+			assert.has_error(function() Example({ 20, y = 84 }):validate() end,
+				"validate: variation_spec property 'name' is not optional")
+			assert.has_no.error(function() Example({ 20, name = "Yay! It's broken somewhere else!" }):validate() end)
+		end)
+
 		it("checks the types of the values of definition fields", function()
 			assert.has_no.errors(function() instance:validate() end)
-			assert.has_error(function() Example({ 20, name = true, 32 }):validate() end)--, "")
-			assert.has_error(function() Example({ false, name = "Ayo", 32 }):validate() end)
-			assert.has_error(function() Example({ false, name = 20, "Woah" }):validate() end)
+			assert.has_error(function() Example({ 20, name = true, 32 }):validate() end,
+				"validate: variation_spec property 'name' must be a string (found 'boolean')")
+			assert.has_error(function() Example({ false, name = "Ayo", 32 }):validate() end,
+				"validate: variation_spec property 'x' must be a number (found 'boolean')")
+			assert.has_error(function() Example({ 45.2, name = 20, "Woah" }):validate() end,
+				"validate: variation_spec property 'name' must be a string (found 'number')")
 		end)
 
 		it("catches fields not defined at the creation of the variation", function()
-			assert.has_error(function() Example({ 20, nothing = true, name = "Yeah! This broke something!" }):validate() end)
+			assert.has_error(function() Example({ 20, nothing = true, name = "Yeah! This broke something!" }):validate() end,
+				"validate: variation_spec does not support property 'nothing'")
 		end)
 	end)
 

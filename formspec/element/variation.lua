@@ -96,6 +96,12 @@ function Variation:validate()
 			error(("validate: %s property '%s' must be a %s (found '%s')")
 				:format(self.name, field[1], field[2], type(def_field)))
 		end
+
+		-- if the variation requires a specific value, check it and throw an error if it isn't satisfied
+		if field[3] and def_field ~= field[3] then
+			error(("validate: %s property '%s' must be a %s with value %s (found %s with value %s)")
+				:format(self.name, field[1], field[2], dump(field[3]), type(def_field), dump(def_field)))
+		end
 	end
 
 	local inverted_map = table.invert(self.field_map)

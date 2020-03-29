@@ -39,6 +39,22 @@ describe("Variation", function()
 				"validate: variation_spec property 'name' must be a string (found 'number')")
 		end)
 
+		it("can force key-type-value conformity", function()
+			local ValueConform = Variation:new(manager, "value_conform_spec", {
+				{ "control", "boolean", true, internal = true },
+				{ "name", "string" }
+			})
+
+			local conform_instance
+			assert.has_no.errors(function() conform_instance = ValueConform({ control = true, name = "John" }) end)
+			assert.are.same("value_conform_spec[John]", conform_instance:render())
+
+			assert.has_error(function() ValueConform({ control = false, name = "John" }) end, "validate: value_conform_spec "
+				.. "property 'control' must be a boolean with value true (found boolean with value false)")
+			assert.has_error(function() ValueConform({ control = true, name = 28 }) end,
+				"validate: value_conform_spec property 'name' must be a string (found 'number')")
+		end)
+
 		it("catches fields not defined at the creation of the variation", function()
 			assert.has_error(function() Example({ 20, nothing = true, name = "Yeah! This broke something!" }):validate() end,
 				"validate: variation_spec does not support property 'nothing'")

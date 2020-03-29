@@ -8,7 +8,7 @@ local queue = utility.Queue:new()
 -- Elements --
 --------------
 
--- TODO: Container element.
+queue:positioned("container", {}, {contains = "Variation"})
 
 queue:element("list", {
 	{ "inventory_location", "string" },

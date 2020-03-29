@@ -1,8 +1,7 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
-local manager = require("tests/mock").FormspecManager:new("elements_spec")
-local Elements = require("formspec/elements")(manager)
+local manager = require("tests/mock").FormspecManager:new(nil, require("formspec/elements"))
 
 function test(name, expected, fields)
 	local message = "takes "
@@ -25,12 +24,23 @@ function test(name, expected, fields)
 
 	describe(("'%s' element"):format(name), function()
 		it(message, function()
-			assert.are.equal(("%s[%s]"):format(name, expected), Elements[name](fields):render())
+			assert.are.equal(("%s[%s]"):format(name, expected), manager.elements[name](fields):render())
 		end)
 	end)
 end
 
--- TODO: container element.
+describe("'container' element", function()
+	it("takes (x, y: number) and contains an arbitrary number of sub-elements", function()
+		local populated
+		(function()
+			populated = manager.elements.container { x = 2, y = 2 } {
+				label { x = 0, y = 0, label = "Hello!" }
+			}
+		end)()
+		assert.are.equal("container[2,2]label[0,0;Hello!]container_end[]", populated:render())
+	end)
+end)
+
 test("list", "location;name;2,3;5,5;",
 	{ inventory_location = "location", list_name = "name", x = 2, y = 3, w = 5, h = 5 })
 test("list", "location;name;2,3;5,5;0",

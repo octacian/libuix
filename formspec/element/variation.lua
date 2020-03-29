@@ -8,8 +8,15 @@ local Variation = utility.make_class("Variation")
 
 -- Creates a new skeleton instance of the variation.
 function Variation:new(parent, name, fields, options)
-	if utility.DEBUG then utility.enforce_types({"FormspecManager", "string", "table", "table?"},
-		parent, name, fields, options) end
+	if utility.DEBUG then
+		utility.enforce_types({"FormspecManager", "string", "table", "table?"}, parent, name, fields, options)
+
+		if options then
+			table.constrain(options, {
+				{"contains", "string", required = false}
+			})
+		end
+	end
 
 	local instance = {
 		parent = parent,
@@ -23,13 +30,32 @@ function Variation:new(parent, name, fields, options)
 end
 
 -- Duplicates and populates a skeleton instance with an arbitrary definition, returning the newly created duplicate.
-function Variation:__call(def, elements)
-	if utility.DEBUG then utility.enforce_types({"table", "table?"}, def, elements) end
+function Variation:populate_new(def, items)
+	if utility.DEBUG then utility.enforce_types({"table", "table?"}, def, items) end
 	local instance = Variation:new(self.parent, self.name, self.fields, self.options)
 	instance.def = def
+	instance.items = items
 	instance.field_map = instance:map_fields()
 	instance:validate()
 	return instance
+end
+
+-- Collects definition and, if enabled, a list of contained items.
+function Variation:__call(def)
+	if self.options and self.options.contains then
+		-- Add element functions to the global environment if contained items should be elements.
+		if self.options.contains == "Variation" then
+			setfenv(2, self.parent.elements)
+		end
+
+		return function(items)
+			if utility.DEBUG then utility.enforce_array(items, self.options.contains) end
+			setfenv(2, getmetatable(self.parent.elements).__index) -- Remove Elements from the global environment.
+			return self:populate_new(def, items)
+		end
+	end
+
+	return self:populate_new(def)
 end
 
 -- Returns a map of the indexes of the fields array to the indexes of the definition. Must be called before validate.
@@ -106,7 +132,19 @@ function Variation:render(model)
 
 	fieldstring = fieldstring:sub(1, -2)
 
-	return self.name .. "[" .. fieldstring .. "]"
+	local contained = ""
+	-- if the element is a container, render items
+	if self.options and self.options.contains then
+		if self.options.contains == "Variation" then
+			for _, item in ipairs(self.items) do
+				contained = contained .. item:render(model)
+			end
+		else error("elements containing non-Variation types are not yet supported") end
+
+		contained = contained .. self.name .. "_end[]"
+	end
+
+	return self.name .. "[" .. fieldstring .. "]" .. contained
 end
 
 -------------

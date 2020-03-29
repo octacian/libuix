@@ -442,6 +442,8 @@ function Queue:new()
 	return instance
 end
 
+-- WARNING: Do not pass non-trailing nil arguments to Queue; unpack will stop at the first nil and all following
+-- arguments will never be passed to the queued function.
 function Queue:__index(key)
 	for k, v in pairs(Queue) do
 		if k == key then

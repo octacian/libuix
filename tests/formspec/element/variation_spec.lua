@@ -1,7 +1,7 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
-local manager = require("tests/mock").FormspecManager:new()
+local manager = require("tests/mock").FormspecManager:new(nil, require("formspec/elements"))
 local Variation = require("formspec/element/variation")
 local Model = require("formspec/model")
 
@@ -68,5 +68,20 @@ describe("Variation", function()
 
 		assert.are.equal("boolean_spec[true]", Example({ option = true }):render())
 		assert.are.equal("boolean_spec[false]", Example({ option = false }):render())
+	end)
+
+	it("supports container elements", function()
+		Example = Variation:new(manager, "container_spec", {
+			{"x", "number", separator = ","},
+			{"y", "number"}
+		}, {contains = "Variation"})
+
+		local populated
+		assert.has_no.error(function()
+			populated = Example { x = 15, y = 7 } {
+				label { x = 0, y = 0, label = "Hello!" }
+			}
+		end)
+		assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render())
 	end)
 end)

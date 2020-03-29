@@ -4,9 +4,15 @@ local utility = require("utility")
 
 local FormspecManager = utility.make_class("FormspecManager")
 
-function FormspecManager:new(modname)
+function FormspecManager:new(modname, elements)
 	local instance = {modname = modname}
 	setmetatable(instance, FormspecManager)
+
+	if elements then
+		instance.elements = elements(instance)
+		setmetatable(instance.elements, { __index = _G })
+	end
+
 	return instance
 end
 
@@ -34,8 +40,8 @@ end
 
 local Element = utility.make_class("Element")
 
-function Element:new(name)
-	local instance = {name = name}
+function Element:new(parent, name)
+	local instance = {parent = parent, name = name}
 	setmetatable(instance, Element)
 	return instance
 end

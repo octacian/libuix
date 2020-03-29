@@ -147,6 +147,30 @@ end
 
 benchmark.elements()
 
+---------------------------------
+-- Complex Elements Benchmarks --
+---------------------------------
+
+-- Container Element
+function benchmark.container_element()
+	local populated
+	Benchmark("Prepare container:", BENCHMARK_COUNT, function()
+		populated = Elements.container { x = 0, y = 0 } {
+			label { x = 0, y = 0, label = "Hello world!" }
+		}
+	end)
+
+	Benchmark("Render container:", BENCHMARK_COUNT, function()
+		for i = 1, RENDER_COUNT do
+			populated:render()
+		end
+	end)
+
+	print()
+end
+
+benchmark.container_element()
+
 ----------------
 -- Form Class --
 ----------------

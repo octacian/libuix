@@ -47,6 +47,25 @@ queue:rect("image", {
 	{ "texture_name", "string" }
 })
 
+queue:rect("image", {
+	{ "type", "string", "standard", internal = true },
+	{ "texture_name", "string" }
+})
+
+queue:rect("image", {
+	{ "type", "string", "animated", internal = true },
+	{ "name", "string" },
+	{ "texture_name", "string" },
+	{ "frame_count", "number" },
+	{ "frame_duration", "number" },
+	{ "frame_start", "number", required = false }
+}, { render_name = "animated_image" })
+
+queue:rect("image", {
+	{ "type", "string", "item", internal = true },
+	{ "item_name", "string" }
+}, { render_name = "item_image" })
+
 queue:positioned("label", {
 	{ "label", "string" }
 })

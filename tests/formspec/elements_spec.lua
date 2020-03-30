@@ -3,7 +3,13 @@ _G.libuix = {}
 _G.modpath = "."
 local manager = require("tests/mock").FormspecManager:new(nil, require("formspec/elements"))
 
-function test(name, expected, fields)
+function test(name, expected_name, expected, fields)
+	if not fields then
+		fields = expected
+		expected = expected_name
+		expected_name = name
+	end
+
 	local message = "takes "
 	if fields == nil or table.count(fields) == 0 then
 		message = "has no fields"
@@ -20,11 +26,15 @@ function test(name, expected, fields)
 		end
 
 		message = message:sub(1, -2)
+
+		if expected_name ~= name then
+			message = message .. (" and should render as '%s'"):format(expected_name)
+		end
 	end
 
 	describe(("'%s' element"):format(name), function()
 		it(message, function()
-			assert.are.equal(("%s[%s]"):format(name, expected), manager.elements[name](fields):render())
+			assert.are.equal(("%s[%s]"):format(expected_name, expected), manager.elements[name](fields):render())
 		end)
 	end)
 end
@@ -55,5 +65,12 @@ test("listcolors", "one;two;three;four;five", {
 })
 -- TODO: tooltip element, implemented as a field for any elements supporting `name`.
 test("image", "0,0;5,5;img.png", { x = 0, y = 0, w = 5, h = 5, texture_name = "img.png" })
+test("image", "0,0;5,5;img.png", { x = 0, y = 0, w = 5, h = 5, type = "standard", texture_name = "img.png" })
+test("image", "animated_image", "0,0;5,5;anim;anim.png;10;500;", { x = 0, y = 0, w = 5, h = 5, type = "animated",
+	name = "anim", texture_name = "anim.png", frame_count = 10, frame_duration = 500 })
+test("image", "animated_image", "0,0;5,5;anim;anim.png;10;500;2", { x = 0, y = 0, w = 5, h = 5, type = "animated",
+	name = "anim", texture_name = "anim.png", frame_count = 10, frame_duration = 500, frame_start = 2 })
+test("image", "item_image", "0,0;5,5;default:stick", { x = 0, y = 0, w = 5, h = 5, type = "item",
+	item_name = "default:stick" })
 
 test("label", "0,0;Hello world!", { x = 0, y = 0, label = "Hello world!" })

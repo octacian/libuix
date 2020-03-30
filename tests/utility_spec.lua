@@ -113,6 +113,12 @@ describe("check_type", function()
 		assert.is_true(check_type(TestClass:new(), "TestClass"))
 		assert.is_false(check_type(false, "string"))
 	end)
+
+	it("can check if some value is one of many types", function()
+		assert.is_true(check_type(32, "string|number"))
+		assert.is_true(check_type(TestClass:new(), "string|number|TestClass|function"))
+		assert.is_false(check_type(true, "number|function|string"))
+	end)
 end)
 
 describe("table.constrain", function()

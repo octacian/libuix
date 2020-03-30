@@ -5,9 +5,10 @@ local manager = require("tests/mock").FormspecManager:new(nil, require("formspec
 local Variation = require("formspec/element/variation")
 local Model = require("formspec/model")
 
+local field_name = { "name", "string" }
 local Example = Variation:new(manager, "variation_spec", {
 	{ "x",  "number", separator = "," },
-	{ "name", "string" },
+	field_name,
 	{ "y", "number", required = false },
 	{ "_if", "string", required = false, internal = true },
 })
@@ -42,7 +43,7 @@ describe("Variation", function()
 		it("can force key-type-value conformity", function()
 			local ValueConform = Variation:new(manager, "value_conform_spec", {
 				{ "control", "boolean", true, internal = true },
-				{ "name", "string" }
+				field_name
 			})
 
 			local conform_instance
@@ -77,10 +78,12 @@ describe("Variation", function()
 		end)
 
 		it("obeys options that affect render output", function()
-			local RenderName = Variation:new(manager, "render_name_spec", {
-				{ "name", "string" }
-			}, { render_name = "custom_render_name" })
+			local RenderName = Variation:new(manager, "render_name_spec", {field_name}, { render_name = "custom_render_name" })
 			assert.are.same("custom_render_name[John]", RenderName({ name = "John" }):render())
+
+			RenderName = Variation:new(manager, "render_name_func_spec", {field_name},
+				{ render_name = function() return "func_render_name" end })
+			assert.are.same("func_render_name[John]", RenderName({ name = "John" }):render())
 		end)
 	end)
 

@@ -14,7 +14,7 @@ function Variation:new(parent, name, fields, options)
 		if options then
 			table.constrain(options, {
 				{"contains", "string", required = false},
-				{"render_name", "string", required = false}
+				{"render_name", "string|function", required = false}
 			})
 		end
 	end
@@ -152,7 +152,17 @@ function Variation:render(model)
 	end
 
 	local name = self.name
-	if self.options and self.options.render_name then name = self.options.render_name end
+	if self.options and self.options.render_name then
+		name = self.options.render_name
+
+		if type(name) == "function" then
+			name = name(self)
+
+			if type(name) ~= "string" then
+				error(("render: %s render_name function must return a string (found %s)"):format(self.name, type(name)))
+			end
+		end
+	end
 
 	return name .. "[" .. fieldstring .. "]" .. contained
 end

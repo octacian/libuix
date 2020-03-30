@@ -173,8 +173,15 @@ end
 
 -- Checks if some value has the expected type.
 local function check_type(value, expected)
-	if type(value) == expected or get_type(value) == expected then return true
-	else return false end
+	-- if a `|` character is found the in expected string, this is a complex comparison
+	if expected:find("|") then
+		for str in expected:gmatch("([^|]+)") do
+			if type(value) == str or get_type(value) == str then return true end
+		end
+	-- otherwise, we can assume that this is a simple comparison
+	elseif type(value) == expected or get_type(value) == expected then return true end
+
+	return false
 end
 
 -- Enforces a specific set of types for function arguments. `types` is an array-equivalent and should include then names

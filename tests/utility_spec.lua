@@ -14,6 +14,7 @@ local static_table = require("utility").static_table
 local enforce_types = require("utility").enforce_types
 local enforce_array = require("utility").enforce_array
 local make_class = require("utility").make_class
+local evaluate_string = require("utility").evaluate_string
 local Queue = require("utility").Queue
 
 local HELLO_MSG = "Hello!"
@@ -283,5 +284,17 @@ describe("Queue", function()
 
 		assert.has_error(function() queue.invalid(); queue:_start(target) end,
 			"libuix->Queue:_start(): attempt to call field 'invalid' (a nil value)")
+	end)
+end)
+
+describe("evaluate_string", function()
+	it("converts some value to a string", function()
+		assert.are.same("Hello", evaluate_string("Hello"))
+		assert.are.same("World", evaluate_string(function(str) return str end, nil, "World"))
+		assert.are.same("28", evaluate_string(28))
+		assert.are.same("32", evaluate_string(function() return 32 end))
+		assert.has_error(function()
+			evaluate_string(function() return 32 end, function(val) error("found " .. type(val)) end)
+		end, "found number")
 	end)
 end)

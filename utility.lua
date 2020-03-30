@@ -436,6 +436,25 @@ local function make_class(name)
 	return class
 end
 
+-- Converts some value to a string. Additional arguments are forwarded if the value happens to be a function. If the
+-- value is a function and it returns something other than a string and err is not nil, err is called with the return
+-- value as an argument.
+local function evaluate_string(value, err, ...)
+	if DEBUG then enforce_types({"function?"}, err) end
+	local value_type = type(value)
+	if value_type == "string" then return value
+	elseif value_type == "function" then
+		value = value(...)
+
+		if type(value) ~= "string" then
+			if err then err(value) end
+			return evaluate_string(value)
+		end
+
+		return value
+	else return tostring(value) end
+end
+
 -----------------
 -- Queue Class --
 -----------------
@@ -506,5 +525,6 @@ return {
 	dump = dump,
 	static_table = static_table,
 	make_class = make_class,
+	evaluate_string = evaluate_string,
 	Queue = Queue
 }

@@ -81,9 +81,8 @@ describe("Variation", function()
 			local RenderName = Variation:new(manager, "render_name_spec", {field_name}, { render_name = "custom_render_name" })
 			assert.are.same("custom_render_name[John]", RenderName({ name = "John" }):render())
 
-			RenderName = Variation:new(manager, "render_name_func_spec", {field_name},
-				{ render_name = function() return "func_render_name" end })
-			assert.are.same("func_render_name[John]", RenderName({ name = "John" }):render())
+			local RenderAppend = Variation:new(manager, "render_append_spec", {field_name}, { render_append = "label[0,0;Hi]" })
+			assert.are.same("render_append_spec[John]label[0,0;Hi]", RenderAppend({ name = "John" }):render())
 		end)
 	end)
 

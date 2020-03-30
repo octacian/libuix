@@ -14,7 +14,8 @@ function Variation:new(parent, name, fields, options)
 		if options then
 			table.constrain(options, {
 				{"contains", "string", required = false},
-				{"render_name", "string|function", required = false}
+				{"render_name", "string|function", required = false},
+				{"render_append", "string|function", required = false}
 			})
 		end
 	end
@@ -140,31 +141,37 @@ function Variation:render(model)
 	fieldstring = fieldstring:sub(1, -2)
 
 	local contained = ""
-	-- if the element is a container, render items
-	if self.options and self.options.contains then
-		if self.options.contains == "Variation" then
-			for _, item in ipairs(self.items) do
-				contained = contained .. item:render(model)
-			end
-		else error("elements containing non-Variation types are not yet supported") end
-
-		contained = contained .. self.name .. "_end[]"
-	end
-
 	local name = self.name
-	if self.options and self.options.render_name then
-		name = self.options.render_name
+	local append = ""
+	-- if there are options defined, investigate them
+	if self.options then
+		-- if the element is a container, render items
+		if self.options.contains then
+			if self.options.contains == "Variation" then
+				for _, item in ipairs(self.items) do
+					contained = contained .. item:render(model)
+				end
+			else error("elements containing non-Variation types are not yet supported") end
 
-		if type(name) == "function" then
-			name = name(self)
+			contained = contained .. self.name .. "_end[]"
+		end
 
-			if type(name) ~= "string" then
-				error(("render: %s render_name function must return a string (found %s)"):format(self.name, type(name)))
-			end
+		-- if a custom render name is defined, evaluate it
+		if self.options.render_name then
+			name = utility.evaluate_string(self.options.render_name, function(value)
+				error(("render: %s render_name function must return a string (found %s)"):format(self.name, type(value)))
+			end, self)
+		end
+
+		-- if a string or function is defined to be appended, evaluate it
+		if self.options.render_append then
+			append = utility.evaluate_string(self.options.render_append, function(value)
+				error(("render: %s render_append function must return a string (found %s)"):format(self.name, type(value)))
+			end, self)
 		end
 	end
 
-	return name .. "[" .. fieldstring .. "]" .. contained
+	return name .. "[" .. fieldstring .. "]" .. contained .. append
 end
 
 -------------

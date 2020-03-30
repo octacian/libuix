@@ -1,5 +1,5 @@
-local utility = dofile(modpath.."/utility.lua")
-local Variation = dofile(modpath.."/formspec/element/variation.lua")
+local utility = import("utility.lua")
+local Variation = import("formspec/element/variation.lua")
 
 -------------------
 -- Element Class --

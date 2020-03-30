@@ -1,8 +1,8 @@
-local utility = dofile(modpath.."/utility.lua")
+local utility = import("utility.lua")
 
-local Form = dofile(modpath.."/formspec/form.lua")
-local Model = dofile(modpath.."/formspec/model.lua")
-local Elements = dofile(modpath.."/formspec/elements.lua")
+local Form = import("formspec/form.lua")
+local Model = import("formspec/model.lua")
+local Elements = import("formspec/elements.lua")
 
 ---------------------------
 -- FormspecManager Class --

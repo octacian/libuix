@@ -1,6 +1,5 @@
 #! /usr/bin/luajit
 
-_G.modpath = "."
 local socket = require('socket')
 
 Benchmark = {}
@@ -46,12 +45,13 @@ local RENDER_COUNT = 1
 local BENCHMARK_COUNT = 100
 local benchmark = {}
 
---------------------
--- Minetest Mocks --
---------------------
+------------
+--  Mocks --
+------------
+
+require("tests/mock")
 
 minetest = {}
-
 function minetest.get_modpath()
 	return "."
 end
@@ -61,8 +61,8 @@ end
 ---------------------
 
 function benchmark.variation()
-	local FormspecManager = dofile("./tests/mock.lua").FormspecManager
-	local Variation = dofile("./formspec/element/variation.lua")
+	local FormspecManager = import("tests/mock.lua").FormspecManager
+	local Variation = import("formspec/element/variation.lua")
 
 	local parent = FormspecManager:new("variation_benchmark")
 	local Example
@@ -95,8 +95,8 @@ benchmark.variation()
 -------------------
 
 function benchmark.element()
-	local FormspecManager = dofile("./tests/mock.lua").FormspecManager
-	local Element = dofile("./formspec/element/element.lua")
+	local FormspecManager = import("tests/mock.lua").FormspecManager
+	local Element = import("formspec/element/element.lua")
 
 	local parent = FormspecManager:new("benchmark")
 	local Example
@@ -132,8 +132,8 @@ benchmark.element()
 
 local Elements
 function benchmark.elements()
-	local manager = dofile("./tests/mock.lua").FormspecManager:new("benchmark_elements")
-	local ElementsClass = dofile("./formspec/elements.lua")
+	local manager = import("tests/mock.lua").FormspecManager:new("benchmark_elements")
+	local ElementsClass = import("formspec/elements.lua")
 
 	Benchmark("Generate elements:", 1, function()
 		Elements = ElementsClass(manager)
@@ -176,9 +176,9 @@ benchmark.container_element()
 ----------------
 
 function benchmark.form()
-	local manager = dofile("./tests/mock.lua").FormspecManager:new("benchmark")
-	local Model = dofile("./formspec/model.lua")
-	local Form = dofile("./formspec/form.lua")
+	local manager = import("tests/mock.lua").FormspecManager:new("benchmark")
+	local Model = import("formspec/model.lua")
+	local Form = import("formspec/form.lua")
 
 	local form_elements
 	Benchmark("Prepare elements:", BENCHMARK_COUNT, function()
@@ -208,7 +208,7 @@ benchmark.form()
 
 function benchmark.formspecmanager()
 	local parent = require("tests/mock").UIXInstance:new("benchmark")
-	local FormspecManager = dofile("./formspec/manager.lua")
+	local FormspecManager = import("formspec/manager.lua")
 
 	local instance
 	Benchmark("Initialize manager:", BENCHMARK_COUNT, function()
@@ -242,7 +242,7 @@ benchmark.formspecmanager()
 ---------
 
 function benchmark.api()
-	dofile("./init.lua")
+	import("init.lua")
 
 	local uix
 	Benchmark("Initialize Everything:", BENCHMARK_COUNT / 4, function()

@@ -1,6 +1,6 @@
-local utility = dofile(modpath.."/utility.lua")
-local Variation = dofile(modpath.."/formspec/element/variation.lua")
-local Element = dofile(modpath.."/formspec/element/element.lua")
+local utility = import("utility.lua")
+local Variation = import("formspec/element/variation.lua")
+local Element = import("formspec/element/element.lua")
 
 -- Default field definitions.
 local default_fields = {

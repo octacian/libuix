@@ -1,5 +1,14 @@
 local utility = require("utility")
 
+--- Import Function ---
+
+function import(name)
+	local f, err = loadfile("./" .. name)
+	if not f then error(err, 2) end
+	setfenv(f, getfenv(2))
+	return f()
+end
+
 --- FormspecManager Class ---
 
 local FormspecManager = utility.make_class("FormspecManager")
@@ -51,6 +60,7 @@ end
 -------------
 
 return {
+	import = import,
 	UIXInstance = UIXInstance,
 	FormspecManager = FormspecManager,
 	Form = Form,

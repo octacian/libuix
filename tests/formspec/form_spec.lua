@@ -2,11 +2,11 @@ package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
 _G.minetest = {}
-local model = require("formspec/model"):new({})
-local Form = require("formspec/form")
-
 local manager = require("tests/mock").FormspecManager:new("form_spec")
 manager.parent = {modname = "form_spec"}
+
+local model = require("formspec/model"):new({})
+local Form = require("formspec/form")
 
 -- show_formspec mock function
 local last_show_formspec_call = {}

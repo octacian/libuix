@@ -14,7 +14,7 @@ read_globals = {
 	"vector", "ItemStack",
 	"dump", "DIR_DELIM", "VoxelArea", "Settings",
 
-	"modpath",
+	"libuix", "import",
 
 	-- libuix elements
 	"list", "listring", "listcolors", "image", "text",

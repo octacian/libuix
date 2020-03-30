@@ -1,4 +1,4 @@
-local utility = dofile(modpath.."/utility.lua")
+local utility = import("utility.lua")
 
 ---------------------
 -- Variation Class --

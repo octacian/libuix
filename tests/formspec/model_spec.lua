@@ -1,6 +1,7 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
+require("tests/mock")
 local Model = require("formspec/model")
 
 describe("Model", function()

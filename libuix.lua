@@ -1,5 +1,5 @@
-local utility = dofile(modpath.."/utility.lua")
-local manager = dofile(modpath.."/formspec/manager.lua")
+local utility = import("utility.lua")
+local manager = import("formspec/manager.lua")
 
 -----------------------
 -- UIXInstance Class --

@@ -1,5 +1,5 @@
-local utility = dofile(modpath.."/utility.lua")
-local Builder = dofile(modpath.."/formspec/element/builder.lua")
+local utility = import("utility.lua")
+local Builder = import("formspec/element/builder.lua")
 
 local field = Builder.default_fields
 local queue = utility.Queue:new()

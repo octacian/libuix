@@ -13,7 +13,8 @@ function Variation:new(parent, name, fields, options)
 
 		if options then
 			table.constrain(options, {
-				{"contains", "string", required = false}
+				{"contains", "string", required = false},
+				{"render_name", "string", required = false}
 			})
 		end
 	end
@@ -150,7 +151,10 @@ function Variation:render(model)
 		contained = contained .. self.name .. "_end[]"
 	end
 
-	return self.name .. "[" .. fieldstring .. "]" .. contained
+	local name = self.name
+	if self.options and self.options.render_name then name = self.options.render_name end
+
+	return name .. "[" .. fieldstring .. "]" .. contained
 end
 
 -------------

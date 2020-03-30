@@ -75,6 +75,13 @@ describe("Variation", function()
 			assert.are.equal("variation_spec[20,Visible;]",
 				Example({20, name = "Visible", _if = "show"}):render(Model:new {show = true}))
 		end)
+
+		it("obeys options that affect render output", function()
+			local RenderName = Variation:new(manager, "render_name_spec", {
+				{ "name", "string" }
+			}, { render_name = "custom_render_name" })
+			assert.are.same("custom_render_name[John]", RenderName({ name = "John" }):render())
+		end)
 	end)
 
 	it("correctly handles boolean fields", function()

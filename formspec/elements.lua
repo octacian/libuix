@@ -118,6 +118,40 @@ queue:rect("button", {
 	{ "exit", "boolean", required = false, internal = true }
 }, { render_name = "item_image_button" })
 
+local field_append_modifier = function(self)
+	if self.def.close_on_enter == false then
+		return "field_close_on_enter[" .. self.def.name .. ";false]"
+	else return "" end
+end
+
+queue:rect("field", {
+	{ "type", "string", "password", internal = true },
+	{ "name", "string" },
+	{ "label", "string", required = false },
+	{ "close_on_enter", "boolean", required = false, internal = true }
+}, { render_name = "pwdfield", render_append = field_append_modifier })
+
+queue:rect("field", {
+	{ "name", "string" },
+	{ "label", "string", required = false },
+	{ "default", "string", required = false },
+	{ "close_on_enter", "boolean", required = false, internal = true }
+}, { render_append = field_append_modifier })
+
+queue:rect("field", {
+	{ "type", "string", "text", internal = true },
+	{ "name", "string" },
+	{ "label", "string", required = false },
+	{ "default", "string", required = false },
+	{ "close_on_enter", "boolean", required = false, internal = true }
+}, { render_append = field_append_modifier })
+
+queue:rect("textarea", {
+	{ "name", "string" },
+	{ "label", "string", required = false },
+	{ "default", "string", required = false }
+})
+
 -------------
 -- Exports --
 -------------

@@ -70,6 +70,54 @@ queue:positioned("label", {
 	{ "label", "string" }
 })
 
+local button_render_name_modifier = function(base_render_name)
+	return function(self)
+		if self.def.exit == true then
+			return base_render_name .. "_exit"
+		else return base_render_name end
+	end
+end
+
+queue:rect("button", {
+	{ "name", "string" },
+	{ "label", "string" },
+	{ "exit", "boolean", required = false, internal = true }
+}, { render_name = button_render_name_modifier("button") })
+
+queue:rect("button", {
+	{ "type", "string", "standard", internal = true },
+	{ "name", "string" },
+	{ "label", "string" },
+	{ "exit", "boolean", required = false, internal = true }
+}, { render_name = button_render_name_modifier("button") })
+
+queue:rect("button", {
+	{ "type", "string", "image", internal = true },
+	{ "texture_name", "string" },
+	{ "name", "string" },
+	{ "label", "string" },
+	{ "exit", "boolean", required = false, internal = true }
+}, { render_name = button_render_name_modifier("image_button") })
+
+queue:rect("button", {
+	{ "type", "string", "image", internal = true },
+	{ "texture_name", "string" },
+	{ "name", "string" },
+	{ "label", "string" },
+	{ "noclip", "boolean" },
+	{ "drawborder", "boolean" },
+	{ "pressed_texture_name", "string" },
+	{ "exit", "boolean", required = false, internal = true }
+}, { render_name = button_render_name_modifier("image_button") })
+
+queue:rect("button", {
+	{ "type", "string", "item", internal = true },
+	{ "item_name", "string" },
+	{ "name", "string" },
+	{ "label", "string" },
+	{ "exit", "boolean", required = false, internal = true }
+}, { render_name = "item_image_button" })
+
 -------------
 -- Exports --
 -------------

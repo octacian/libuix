@@ -72,5 +72,24 @@ test("image", "animated_image", "0,0;5,5;anim;anim.png;10;500;2", { x = 0, y = 0
 	name = "anim", texture_name = "anim.png", frame_count = 10, frame_duration = 500, frame_start = 2 })
 test("image", "item_image", "0,0;5,5;default:stick", { x = 0, y = 0, w = 5, h = 5, type = "item",
 	item_name = "default:stick" })
+test("button", "0,0;2,1;btn;Press Me!", { x = 0, y = 0, w = 2, h = 1, name = "btn", label = "Press Me!" })
+test("button", "button_exit", "0,0;2,1;btn;Press Me!", { x = 0, y = 0, w = 2, h = 1, name = "btn", label = "Press Me!",
+	exit = true })
+test("button", "0,0;2,1;btn;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "standard", name = "btn",
+	label = "Press Me!" })
+test("button", "button_exit", "0,0;2,1;btn;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "standard", name = "btn",
+	label = "Press Me!", exit = true })
+test("button", "image_button", "0,0;2,1;btn.png;btn;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "image",
+	texture_name = "btn.png", name = "btn", label = "Press Me!"})
+test("button", "image_button", "0,0;2,1;btn.png;btn;Press Me!;true;true;pressed.png", { x = 0, y = 0, w = 2, h = 1,
+	type = "image", texture_name = "btn.png", name = "btn", label = "Press Me!", noclip = true, drawborder = true,
+	pressed_texture_name = "pressed.png"})
+test("button", "image_button_exit", "0,0;2,1;btn.png;btn;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "image",
+	texture_name = "btn.png", name = "btn", label = "Press Me!", exit = true})
+test("button", "image_button_exit", "0,0;2,1;btn.png;btn;Press Me!;true;true;pressed.png", { x = 0, y = 0, w = 2, h = 1,
+	type = "image", texture_name = "btn.png", name = "btn", label = "Press Me!", noclip = true, drawborder = true,
+	pressed_texture_name = "pressed.png", exit = true})
+test("button", "item_image_button", "0,0;1,1;default:stick;btn;Press Me!", { x = 0, y = 0, w = 1, h = 1, type = "item",
+	item_name = "default:stick", name = "btn", label = "Press Me!"})
 
 test("label", "0,0;Hello world!", { x = 0, y = 0, label = "Hello world!" })

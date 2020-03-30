@@ -12,11 +12,11 @@ describe("FormspecManager", function()
 	it("collects formspec name, options, elements, and model for addition to the instance", function()
 		assert.has_no.error(function()
 			instance("manager_spec") { w = 5, h = 10 } {
-				label { x = 0, y = 0, label = "Hello!" }
+				text { x = 0, y = 0, text = "Hello!" }
 			} {}
 		end)
 
-		assert.are.equal("Hello!", instance.forms[1].elements[1].def.label)
+		assert.are.equal("Hello!", instance.forms[1].elements[1].def.text)
 	end)
 
 	describe("get", function()

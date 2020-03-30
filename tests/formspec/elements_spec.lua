@@ -49,7 +49,7 @@ describe("'container' element", function()
 		local populated
 		(function()
 			populated = manager.elements.container { x = 2, y = 2 } {
-				label { x = 0, y = 0, label = "Hello!" }
+				text { x = 0, y = 0, text = "Hello!" }
 			}
 		end)()
 		assert.are.equal("container[2,2]label[0,0;Hello!]container_end[]", populated:render())
@@ -77,6 +77,12 @@ test("image", "animated_image", "0,0;5,5;anim;anim.png;10;500;2", { x = 0, y = 0
 	name = "anim", texture_name = "anim.png", frame_count = 10, frame_duration = 500, frame_start = 2 })
 test("image", "item_image", "0,0;5,5;default:stick", { x = 0, y = 0, w = 5, h = 5, type = "item",
 	item_name = "default:stick" })
+test("text", "label", "0,0;Hello!", { x = 0, y = 0, text = "Hello!" })
+test("text", "label", "0,0;Hello!", { x = 0, y = 0, type = "horizontal", text = "Hello!" })
+test("text", "vertlabel", "0,0;Hello!", { x = 0, y = 0, type = "vertical", text = "Hello!" })
+test("text", "textarea", "0,0;5,5;;;Hello!", { x = 0, y = 0, w = 5, h = 5, type = "plain", text = "Hello!"})
+test("text", "hypertext", "0,0;5,5;txt;Hello!", { x = 0, y = 0, w = 5, h = 5, type = "markup", name = "txt",
+	text = "Hello!"})
 test("button", nil, "0,0;2,1;btn;Press Me!", { x = 0, y = 0, w = 2, h = 1, name = "btn", label = "Press Me!" })
 test("button", "button_exit", "0,0;2,1;btn;Press Me!", { x = 0, y = 0, w = 2, h = 1, name = "btn", label = "Press Me!",
 	exit = true })
@@ -112,5 +118,3 @@ test("field", nil, "0,0;2,1;input;;", { x = 0, y = 0, w = 2, h = 1, type = "text
 test("textarea", nil, "0,0;5,5;text;;", { x = 0, y = 0, w = 5, h = 5, name = "text" })
 test("textarea", nil, "0,0;5,5;text;Text;", { x = 0, y = 0, w = 5, h = 5, name = "text", label = "Text" })
 test("textarea", nil, "0,0;5,5;text;;abcdefg", { x = 0, y = 0, w = 5, h = 5, name = "text", default = "abcdefg" })
-
-test("label", nil, "0,0;Hello world!", { x = 0, y = 0, label = "Hello world!" })

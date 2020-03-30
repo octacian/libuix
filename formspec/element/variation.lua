@@ -89,7 +89,7 @@ function Variation:validate()
 		local def_field = self.def[self.field_map[index]]
 
 		-- if def_field is still nil, the field wasn't defined, throw an error
-		if def_field == nil and field.required ~= false then
+		if def_field == nil and field.required ~= false and field.hidden ~= true then
 			error(("validate: %s property '%s' is not optional"):format(self.name, field[1]))
 		end
 
@@ -109,7 +109,7 @@ function Variation:validate()
 	local inverted_map = table.invert(self.field_map)
 	-- Loop over definition to check for extra keys
 	for def_key, _ in pairs(self.def) do
-		if not inverted_map[def_key] then
+		if not inverted_map[def_key] or self.fields[inverted_map[def_key]].hidden then
 			error(("validate: %s does not support property '%s'"):format(self.name, def_key))
 		end
 	end

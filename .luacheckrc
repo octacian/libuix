@@ -17,5 +17,5 @@ read_globals = {
 	"modpath",
 
 	-- libuix elements
-	"list", "listring", "listcolors", "image", "label",
+	"list", "listring", "listcolors", "image", "text",
 }

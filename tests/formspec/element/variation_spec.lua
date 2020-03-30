@@ -11,6 +11,7 @@ local Example = Variation:new(manager, "variation_spec", {
 	field_name,
 	{ "y", "number", required = false },
 	{ "_if", "string", required = false, internal = true },
+	{ "ignore", "boolean", hidden = true, internal = true }
 })
 
 describe("Variation", function()
@@ -59,6 +60,8 @@ describe("Variation", function()
 		it("catches fields not defined at the creation of the variation", function()
 			assert.has_error(function() Example({ 20, nothing = true, name = "Yeah! This broke something!" }):validate() end,
 				"validate: variation_spec does not support property 'nothing'")
+			assert.has_error(function() Example({ 20, name = "John", ignore = true }):validate() end,
+				"validate: variation_spec does not support property 'ignore'")
 		end)
 	end)
 
@@ -104,7 +107,7 @@ describe("Variation", function()
 		local populated
 		assert.has_no.error(function()
 			populated = Example { x = 15, y = 7 } {
-				label { x = 0, y = 0, label = "Hello!" }
+				text { x = 0, y = 0, text = "Hello!" }
 			}
 		end)
 		assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render())

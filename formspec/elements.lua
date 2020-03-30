@@ -66,9 +66,32 @@ queue:rect("image", {
 	{ "item_name", "string" }
 }, { render_name = "item_image" })
 
-queue:positioned("label", {
-	{ "label", "string" }
-})
+queue:positioned("text", {
+	{ "text", "string" },
+}, { render_name = "label" })
+
+queue:positioned("text", {
+	{ "type", "string", "horizontal", internal = true },
+	{ "text", "string" }
+}, { render_name = "label" })
+
+queue:positioned("text", {
+	{ "type", "string", "vertical", internal = true },
+	{ "text", "string" }
+}, { render_name = "vertlabel" })
+
+queue:rect("text", {
+	{ "type", "string", "plain", internal = true },
+	{ "name", "string", hidden = true },
+	{ "label", "string", hidden = true },
+	{ "text", "string" }
+}, { render_name = "textarea" })
+
+queue:rect("text", {
+	{ "type", "string", "markup", internal = true },
+	{ "name", "string" },
+	{ "text", "string" }
+}, { render_name = "hypertext" })
 
 local button_render_name_modifier = function(base_render_name)
 	return function(self)

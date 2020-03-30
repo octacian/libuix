@@ -18,7 +18,7 @@ Let's create and show a very simple formspec with just three elements:
 uix:formspec("example") { w = 5, h = 5 } {
 	field { x = 0, y = 1, w = 5, h = 1, label = "Message:", _model = "message" },
 	button { x = 0, y = 2.5, w = 5, h = 1, label = "Submit", _click = "submit" },
-	label { x = 0, y = 4, _if = "message ~= ''", _label = "You said: ${message}" }
+	text { x = 0, y = 4, _if = "message ~= ''", _text = "You said: ${message}" }
 } {
 	message = "",
 	submit = function(self)

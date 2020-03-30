@@ -156,7 +156,7 @@ function benchmark.container_element()
 	local populated
 	Benchmark("Prepare container:", BENCHMARK_COUNT, function()
 		populated = Elements.container { x = 0, y = 0 } {
-			label { x = 0, y = 0, label = "Hello world!" }
+			text { x = 0, y = 0, text = "Hello world!" }
 		}
 	end)
 
@@ -184,7 +184,7 @@ function benchmark.form()
 	Benchmark("Prepare elements:", BENCHMARK_COUNT, function()
 		form_elements = {}
 		for i = 1, RENDER_COUNT do
-			form_elements[#form_elements + 1] = Elements["label"] { x = 0, y = 0, label = "Hello!" }
+			form_elements[#form_elements + 1] = Elements["text"] { x = 0, y = 0, text = "Hello!" }
 		end
 	end)
 
@@ -219,7 +219,7 @@ function benchmark.formspecmanager()
 	Benchmark("Prepare elements:", BENCHMARK_COUNT, function()
 		form_elements = {}
 		for i = 1, RENDER_COUNT do
-			form_elements[#form_elements + 1] = Elements["label"] { x = 0, y = 0, label = "Hello!" }
+			form_elements[#form_elements + 1] = Elements["text"] { x = 0, y = 0, text = "Hello!" }
 		end
 	end)
 
@@ -252,7 +252,7 @@ function benchmark.api()
 	Benchmark("Add form:\t", BENCHMARK_COUNT / 4, function()
 		local form_elements = {}
 		for i = 1, RENDER_COUNT do
-			form_elements[#form_elements + 1] = Elements["label"] { x = 0, y = 0, label = "Hello!" }
+			form_elements[#form_elements + 1] = Elements["text"] { x = 0, y = 0, text = "Hello!" }
 		end
 		uix.formspec("bench_form") { w = 5, h = 5 } (form_elements) ({})
 	end)

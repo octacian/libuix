@@ -29,10 +29,15 @@ end
 
 local Form = utility.make_class("Form")
 
-function Form:new(name)
-	local instance = {name = name}
+function Form:new(name, model)
+	local instance = {name = name, model = model, last_id = -1}
 	setmetatable(instance, Form)
 	return instance
+end
+
+function Form:new_id()
+	self.last_id = self.last_id + 1
+	return self.last_id
 end
 
 --- UIXInstance Class ---

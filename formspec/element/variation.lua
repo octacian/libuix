@@ -36,6 +36,8 @@ function Variation:populate_new(def, items)
 	if utility.DEBUG then utility.enforce_types({"table", "table?"}, def, items) end
 	local instance = Variation:new(self.parent, self.name, self.fields, self.options)
 	instance.def = def
+	instance.generated_def = {}
+	setmetatable(instance.def, { __index = instance.generated_def })
 	instance.items = items
 	instance.field_map = instance:map_fields()
 	instance:validate()
@@ -89,7 +91,7 @@ function Variation:validate()
 		local def_field = self.def[self.field_map[index]]
 
 		-- if def_field is still nil, the field wasn't defined, throw an error
-		if def_field == nil and field.required ~= false and field.hidden ~= true then
+		if def_field == nil and field.required ~= false and field.hidden ~= true and field.generate ~= true then
 			error(("validate: %s property '%s' is not optional"):format(self.name, field[1]))
 		end
 
@@ -117,12 +119,12 @@ function Variation:validate()
 	return true
 end
 
--- Renders a variation given a data model.
-function Variation:render(model)
-	if utility.DEBUG then utility.enforce_types({"table?"}, model) end
+-- Renders a variation given a form as context.
+function Variation:render(form)
+	if utility.DEBUG then utility.enforce_types({"Form"}, form) end
 
 	-- Obey _if visibility control.
-	if self.def._if and not model:_evaluate(self.def._if) then
+	if self.def._if and not form.model:_evaluate(self.def._if) then
 		return ""
 	end
 
@@ -131,7 +133,10 @@ function Variation:render(model)
 		if field.internal ~= true then
 			local def_index = self.field_map[index]
 			local value = self.def[def_index]
-			if value == nil then value = "" end
+			if field.generate and (field.hidden or value == nil) then
+				self.generated_def[field[1]] = tostring(form:new_id())
+				value = self.generated_def[field[1]]
+			elseif value == nil then value = "" end
 			local separator = field.separator
 			if separator == nil then separator = ";" end
 			fieldstring = fieldstring .. tostring(value) .. separator
@@ -149,7 +154,7 @@ function Variation:render(model)
 		if self.options.contains then
 			if self.options.contains == "Variation" then
 				for _, item in ipairs(self.items) do
-					contained = contained .. item:render(model)
+					contained = contained .. item:render(form)
 				end
 			else error("elements containing non-Variation types are not yet supported") end
 

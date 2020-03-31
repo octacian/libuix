@@ -54,7 +54,7 @@ queue:rect("image", {
 
 queue:rect("image", {
 	{ "type", "string", "animated", internal = true },
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "texture_name", "string" },
 	{ "frame_count", "number" },
 	{ "frame_duration", "number" },
@@ -89,7 +89,7 @@ queue:rect("text", {
 
 queue:rect("text", {
 	{ "type", "string", "markup", internal = true },
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "text", "string" }
 }, { render_name = "hypertext" })
 
@@ -102,14 +102,14 @@ local button_render_name_modifier = function(base_render_name)
 end
 
 queue:rect("button", {
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
 	{ "exit", "boolean", required = false, internal = true }
 }, { render_name = button_render_name_modifier("button") })
 
 queue:rect("button", {
 	{ "type", "string", "standard", internal = true },
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
 	{ "exit", "boolean", required = false, internal = true }
 }, { render_name = button_render_name_modifier("button") })
@@ -117,7 +117,7 @@ queue:rect("button", {
 queue:rect("button", {
 	{ "type", "string", "image", internal = true },
 	{ "texture_name", "string" },
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
 	{ "exit", "boolean", required = false, internal = true }
 }, { render_name = button_render_name_modifier("image_button") })
@@ -125,7 +125,7 @@ queue:rect("button", {
 queue:rect("button", {
 	{ "type", "string", "image", internal = true },
 	{ "texture_name", "string" },
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
 	{ "noclip", "boolean" },
 	{ "drawborder", "boolean" },
@@ -136,7 +136,7 @@ queue:rect("button", {
 queue:rect("button", {
 	{ "type", "string", "item", internal = true },
 	{ "item_name", "string" },
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
 	{ "exit", "boolean", required = false, internal = true }
 }, { render_name = "item_image_button" })
@@ -149,13 +149,13 @@ end
 
 queue:rect("field", {
 	{ "type", "string", "password", internal = true },
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
 	{ "close_on_enter", "boolean", required = false, internal = true }
 }, { render_name = "pwdfield", render_append = field_append_modifier })
 
 queue:rect("field", {
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false },
 	{ "close_on_enter", "boolean", required = false, internal = true }
@@ -163,14 +163,14 @@ queue:rect("field", {
 
 queue:rect("field", {
 	{ "type", "string", "text", internal = true },
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false },
 	{ "close_on_enter", "boolean", required = false, internal = true }
 }, { render_append = field_append_modifier })
 
 queue:rect("textarea", {
-	{ "name", "string" },
+	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false }
 })

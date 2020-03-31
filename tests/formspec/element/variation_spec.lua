@@ -1,7 +1,9 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
-local manager = require("tests/mock").FormspecManager:new(nil, require("formspec/elements"))
+local mock = require("tests/mock")
+local manager = mock.FormspecManager:new(nil, require("formspec/elements"))
+local form = mock.Form:new()
 local Variation = require("formspec/element/variation")
 local Model = require("formspec/model")
 
@@ -12,6 +14,10 @@ local Example = Variation:new(manager, "variation_spec", {
 	{ "y", "number", required = false },
 	{ "_if", "string", required = false, internal = true },
 	{ "ignore", "boolean", hidden = true, internal = true }
+})
+
+local AutoGen = Variation:new(manager, "auto_gen_spec", {
+	{ "name", "string", generate = true }
 })
 
 describe("Variation", function()
@@ -25,10 +31,11 @@ describe("Variation", function()
 	end)
 
 	describe("validate", function()
-		it("errors if any required fields are missing", function()
+		it("errors if any required fields are missing unless they can be generated", function()
 			assert.has_error(function() Example({ 20, y = 84 }):validate() end,
 				"validate: variation_spec property 'name' is not optional")
 			assert.has_no.error(function() Example({ 20, name = "Yay! It's broken somewhere else!" }):validate() end)
+			assert.has_no.error(function() AutoGen({}):validate() end)
 		end)
 
 		it("checks the types of the values of definition fields", function()
@@ -49,7 +56,7 @@ describe("Variation", function()
 
 			local conform_instance
 			assert.has_no.errors(function() conform_instance = ValueConform({ control = true, name = "John" }) end)
-			assert.are.same("value_conform_spec[John]", conform_instance:render())
+			assert.are.same("value_conform_spec[John]", conform_instance:render(form))
 
 			assert.has_error(function() ValueConform({ control = false, name = "John" }) end, "validate: value_conform_spec "
 				.. "property 'control' must be a boolean with value true (found boolean with value false)")
@@ -66,26 +73,33 @@ describe("Variation", function()
 	end)
 
 	describe("render", function()
+		it("autogenerates necessary fields", function()
+			local last_id = form.last_id + 1
+			assert.are.equal("auto_gen_spec[" .. last_id .. "]", AutoGen({}):render(form))
+			assert.are.equal("auto_gen_spec[45]", AutoGen({ name = "45" }):render(form))
+		end)
+
 		it("outputs a string compatible with Minetest formspecs", function()
-			assert.are.equal("variation_spec[20,Example * 9.8;32]", instance:render({}))
+			assert.are.equal("variation_spec[20,Example * 9.8;32]", instance:render(form))
 		end)
 
 		it("inserts extra separators for optional fields", function()
-			assert.are.equal("variation_spec[20,Will this break?;]", Example({ 20, name = "Will this break?" }):render())
+			assert.are.equal("variation_spec[20,Will this break?;]", Example({ 20, name = "Will this break?" }):render(form))
 		end)
 
 		it("obeys visibility rules", function()
-			assert.are.equal("", Example({20, name = "Invisible", _if = "show"}):render(Model:new {show = false}))
+			assert.are.equal("",
+				Example({20, name = "Invisible", _if = "show"}):render(mock.Form:new(nil, Model:new {show = false})))
 			assert.are.equal("variation_spec[20,Visible;]",
-				Example({20, name = "Visible", _if = "show"}):render(Model:new {show = true}))
+				Example({20, name = "Visible", _if = "show"}):render(mock.Form:new(nil, Model:new {show = true})))
 		end)
 
 		it("obeys options that affect render output", function()
 			local RenderName = Variation:new(manager, "render_name_spec", {field_name}, { render_name = "custom_render_name" })
-			assert.are.same("custom_render_name[John]", RenderName({ name = "John" }):render())
+			assert.are.same("custom_render_name[John]", RenderName({ name = "John" }):render(form))
 
 			local RenderAppend = Variation:new(manager, "render_append_spec", {field_name}, { render_append = "label[0,0;Hi]" })
-			assert.are.same("render_append_spec[John]label[0,0;Hi]", RenderAppend({ name = "John" }):render())
+			assert.are.same("render_append_spec[John]label[0,0;Hi]", RenderAppend({ name = "John" }):render(form))
 		end)
 	end)
 
@@ -94,8 +108,8 @@ describe("Variation", function()
 			{ "option", "boolean" }
 		})
 
-		assert.are.equal("boolean_spec[true]", Example({ option = true }):render())
-		assert.are.equal("boolean_spec[false]", Example({ option = false }):render())
+		assert.are.equal("boolean_spec[true]", Example({ option = true }):render(form))
+		assert.are.equal("boolean_spec[false]", Example({ option = false }):render(form))
 	end)
 
 	it("supports container elements", function()
@@ -110,6 +124,6 @@ describe("Variation", function()
 				text { x = 0, y = 0, text = "Hello!" }
 			}
 		end)
-		assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render())
+		assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render(form))
 	end)
 end)

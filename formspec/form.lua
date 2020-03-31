@@ -32,10 +32,17 @@ function Form:new(parent, name, options, elements, model)
 		name = name,
 		options = options,
 		elements = elements,
-		model = model
+		model = model,
+		last_id = -1
 	}
 	setmetatable(instance, Form)
 	return instance
+end
+
+-- Returns a new numerical ID unique to this form.
+function Form:new_id()
+	self.last_id = self.last_id + 1
+	return self.last_id
 end
 
 -- Renders the form, returning a Minetest-compatible formspec string.
@@ -74,7 +81,7 @@ function Form:render()
 
 	-- Render all formspec elements
 	for _, element in pairs(self.elements) do
-		formstring = formstring .. element:render(self.model)
+		formstring = formstring .. element:render(self)
 	end
 
 	return formstring

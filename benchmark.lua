@@ -49,19 +49,22 @@ local benchmark = {}
 --  Mocks --
 ------------
 
-require("tests/mock")
+local mock = require("tests/mock")
 
 minetest = {}
 function minetest.get_modpath()
 	return "."
 end
 
+local shared_form = import("formspec/form.lua"):new(mock.FormspecManager:new(), "shared_form", {}, {},
+	import("formspec/model.lua"):new({}))
+
 ---------------------
 -- Variation Class --
 ---------------------
 
 function benchmark.variation()
-	local FormspecManager = import("tests/mock.lua").FormspecManager
+	local FormspecManager = mock.FormspecManager
 	local Variation = import("formspec/element/variation.lua")
 
 	local parent = FormspecManager:new("variation_benchmark")
@@ -81,7 +84,7 @@ function benchmark.variation()
 
 	Benchmark("Render variation:", BENCHMARK_COUNT, function()
 		for i = 1, RENDER_COUNT do
-		populated:render()
+		populated:render(shared_form)
 		end
 	end)
 
@@ -95,7 +98,7 @@ benchmark.variation()
 -------------------
 
 function benchmark.element()
-	local FormspecManager = import("tests/mock.lua").FormspecManager
+	local FormspecManager = mock.FormspecManager
 	local Element = import("formspec/element/element.lua")
 
 	local parent = FormspecManager:new("benchmark")
@@ -117,7 +120,7 @@ function benchmark.element()
 
 	Benchmark("Render element:\t", BENCHMARK_COUNT, function()
 		for i = 1, RENDER_COUNT do
-			populated:render()
+			populated:render(shared_form)
 		end
 	end)
 
@@ -132,7 +135,7 @@ benchmark.element()
 
 local Elements
 function benchmark.elements()
-	local manager = import("tests/mock.lua").FormspecManager:new("benchmark_elements")
+	local manager = mock.FormspecManager:new("benchmark_elements")
 	local ElementsClass = import("formspec/elements.lua")
 
 	Benchmark("Generate elements:", 1, function()
@@ -162,7 +165,7 @@ function benchmark.container_element()
 
 	Benchmark("Render container:", BENCHMARK_COUNT, function()
 		for i = 1, RENDER_COUNT do
-			populated:render()
+			populated:render(shared_form)
 		end
 	end)
 
@@ -176,7 +179,7 @@ benchmark.container_element()
 ----------------
 
 function benchmark.form()
-	local manager = import("tests/mock.lua").FormspecManager:new("benchmark")
+	local manager = mock.FormspecManager:new("benchmark")
 	local Model = import("formspec/model.lua")
 	local Form = import("formspec/form.lua")
 
@@ -194,7 +197,7 @@ function benchmark.form()
 	end)
 
 	Benchmark("Render form:\t", BENCHMARK_COUNT, function()
-		Example:render()
+		Example:render(shared_form)
 	end)
 
 	print()
@@ -229,7 +232,7 @@ function benchmark.formspecmanager()
 
 	local form = instance:get("bench_form")
 	Benchmark("Render form:\t", BENCHMARK_COUNT, function()
-		form:render()
+		form:render(shared_form)
 	end)
 
 	print()
@@ -259,7 +262,7 @@ function benchmark.api()
 
 	local form = uix.formspec:get("bench_form")
 	Benchmark("Render form:\t", BENCHMARK_COUNT, function()
-		form:render()
+		form:render(shared_form)
 	end)
 end
 

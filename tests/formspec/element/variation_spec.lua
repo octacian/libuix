@@ -33,7 +33,7 @@ describe("Variation", function()
 	describe("validate", function()
 		it("errors if any required fields are missing unless they can be generated", function()
 			assert.has_error(function() Example({ 20, y = 84 }):validate() end,
-				"validate: variation_spec property 'name' is not optional")
+				"libuix->Variation:validate: variation_spec property 'name' is not optional")
 			assert.has_no.error(function() Example({ 20, name = "Yay! It's broken somewhere else!" }):validate() end)
 			assert.has_no.error(function() AutoGen({}):validate() end)
 		end)
@@ -41,11 +41,11 @@ describe("Variation", function()
 		it("checks the types of the values of definition fields", function()
 			assert.has_no.errors(function() instance:validate() end)
 			assert.has_error(function() Example({ 20, name = true, 32 }):validate() end,
-				"validate: variation_spec property 'name' must be a string (found 'boolean')")
+				"libuix->Variation:validate: variation_spec property 'name' must be a string (found boolean)")
 			assert.has_error(function() Example({ false, name = "Ayo", 32 }):validate() end,
-				"validate: variation_spec property 'x' must be a number (found 'boolean')")
+				"libuix->Variation:validate: variation_spec property 'x' must be a number (found boolean)")
 			assert.has_error(function() Example({ 45.2, name = 20, "Woah" }):validate() end,
-				"validate: variation_spec property 'name' must be a string (found 'number')")
+				"libuix->Variation:validate: variation_spec property 'name' must be a string (found number)")
 		end)
 
 		it("can force key-type-value conformity", function()
@@ -58,17 +58,17 @@ describe("Variation", function()
 			assert.has_no.errors(function() conform_instance = ValueConform({ control = true, name = "John" }) end)
 			assert.are.same("value_conform_spec[John]", conform_instance:render(form))
 
-			assert.has_error(function() ValueConform({ control = false, name = "John" }) end, "validate: value_conform_spec "
-				.. "property 'control' must be a boolean with value true (found boolean with value false)")
+			assert.has_error(function() ValueConform({ control = false, name = "John" }) end, "libuix->Variation:validate: "
+				.. "value_conform_spec property 'control' must be a boolean with value true (found boolean with value false)")
 			assert.has_error(function() ValueConform({ control = true, name = 28 }) end,
-				"validate: value_conform_spec property 'name' must be a string (found 'number')")
+				"libuix->Variation:validate: value_conform_spec property 'name' must be a string (found number)")
 		end)
 
 		it("catches fields not defined at the creation of the variation", function()
 			assert.has_error(function() Example({ 20, nothing = true, name = "Yeah! This broke something!" }):validate() end,
-				"validate: variation_spec does not support property 'nothing'")
+				"libuix->Variation:validate: variation_spec does not support property 'nothing'")
 			assert.has_error(function() Example({ 20, name = "John", ignore = true }):validate() end,
-				"validate: variation_spec does not support property 'ignore'")
+				"libuix->Variation:validate: variation_spec does not support property 'ignore'")
 		end)
 	end)
 

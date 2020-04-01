@@ -87,14 +87,13 @@ function Form:render()
 	return formstring
 end
 
+local show_err = utility.ErrorBuilder:new("Form:show", 2)
 -- Shows the form to a player who is identified by name.
 function Form:show(player_name)
 	if utility.DEBUG then utility.enforce_types({"string"}, player_name) end
 
 	local formstring = self:render()
-	if not formstring then
-		error(("libuix().formspec['%s']:show: formspec contains no elements"):format(self.name))
-	end
+	show_err:assert(formstring ~= "", "formspec %s:%s contains no elements", self.parent.parent.modname, self.name)
 
 	minetest.show_formspec(player_name, self.parent.parent.modname .. ":" .. self.name, formstring)
 end

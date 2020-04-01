@@ -27,13 +27,12 @@ function Benchmark:stop()
 	print(self.desc .. "\t" .. string.format("%.6f", stop))
 end
 
-require("./utility")
+local utility = require("./utility")
 
 Benchmark("Print Message:\t", 1, function()
 	print("Hello world! " .. 4 * 90)
 end)
 print("Formspec in Minetest:\t0.000021")
-print()
 
 local variation_fields = {
 	{ "x",  "number", separator = "," },
@@ -58,6 +57,22 @@ end
 
 local shared_form = import("formspec/form.lua"):new(mock.FormspecManager:new(), "shared_form", {}, {},
 	import("formspec/model.lua"):new({}))
+
+------------------------
+-- ErrorBuilder Class --
+------------------------
+
+function benchmark.errorbuilder()
+	Benchmark("Create ErrorBuilder:", BENCHMARK_COUNT, function()
+		for i = 1, RENDER_COUNT do
+			utility.ErrorBuilder:new("benchmark.errorbuilder")
+		end
+	end)
+
+	print()
+end
+
+benchmark.errorbuilder()
 
 ---------------------
 -- Variation Class --

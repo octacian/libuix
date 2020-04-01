@@ -32,7 +32,7 @@ end
 
 describe("ErrorBuilder", function()
 	it("populates error message with repetitive fields", function()
-		local err = ErrorBuilder:new("error_spec()", true, false)
+		local err = ErrorBuilder:new("error_spec()", nil, true, false)
 		assert.has_error(function() err:throw("got message %s %s", "hello", "world") end,
 			"libuix->error_spec(): got message hello world")
 		assert.has_error(function() err:assert(true == false, "failure %s", "is known") end,

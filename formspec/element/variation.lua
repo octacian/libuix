@@ -6,6 +6,7 @@ local utility = import("utility.lua")
 
 local Variation = utility.make_class("Variation")
 
+local new_err = utility.ErrorBuilder:new("Variation:new")
 -- Creates a new skeleton instance of the variation.
 function Variation:new(parent, name, fields, options, child_elements)
 	if utility.DEBUG then
@@ -36,9 +37,7 @@ function Variation:new(parent, name, fields, options, child_elements)
 						end
 					end
 
-					if not found then
-						error(("variation: %s render_target '%s' does not exist"):format(name, options.contains.render_target))
-					end
+					new_err:assert(found, "%s contains no fields matching render_target '%s'", name, options.contains.render_target)
 				end
 			end
 		end
@@ -127,6 +126,7 @@ function Variation:map_fields()
 	return field_map
 end
 
+local validate_err = utility.ErrorBuilder:new("Variation:validate")
 -- Validates a definition table to variation constraints. Must be called after map_fields.
 function Variation:validate()
 	for index, field in pairs(self.fields) do
@@ -134,19 +134,18 @@ function Variation:validate()
 
 		-- if def_field is still nil, the field wasn't defined, throw an error
 		if def_field == nil and field.required ~= false and field.hidden ~= true and field.generate ~= true then
-			error(("validate: %s property '%s' is not optional"):format(self.name, field[1]))
+			validate_err:throw("%s property '%s' is not optional", self.name, field[1])
 		end
 
 		-- if the value of the data stored in the definition field does not match the expected type, throw an error
 		if def_field ~= nil and type(def_field) ~= field[2] then
-			error(("validate: %s property '%s' must be a %s (found '%s')")
-				:format(self.name, field[1], field[2], type(def_field)))
+			validate_err:throw("%s property '%s' must be a %s (found %s)", self.name, field[1], field[2], type(def_field))
 		end
 
 		-- if the variation requires a specific value, check it and throw an error if it isn't satisfied
 		if field[3] and def_field ~= field[3] then
-			error(("validate: %s property '%s' must be a %s with value %s (found %s with value %s)")
-				:format(self.name, field[1], field[2], dump(field[3]), type(def_field), dump(def_field)))
+			validate_err:throw("%s property '%s' must be a %s with value %s (found %s with value %s)", self.name, field[1],
+				field[2], dump(field[3]), type(def_field), dump(def_field))
 		end
 	end
 
@@ -154,13 +153,14 @@ function Variation:validate()
 	-- Loop over definition to check for extra keys
 	for def_key, _ in pairs(self.def) do
 		if not inverted_map[def_key] or self.fields[inverted_map[def_key]].hidden then
-			error(("validate: %s does not support property '%s'"):format(self.name, def_key))
+			validate_err:throw("%s does not support property '%s'", self.name, def_key)
 		end
 	end
 
 	return true
 end
 
+local render_err = utility.ErrorBuilder:new("Variation:render")
 -- Renders a variation given a form as context.
 function Variation:render(form)
 	if utility.DEBUG then utility.enforce_types({"Form"}, form) end
@@ -206,14 +206,14 @@ function Variation:render(form)
 		-- if a custom render name is defined, evaluate it
 		if self.options.render_name then
 			name = utility.evaluate_string(self.options.render_name, function(value)
-				error(("render: %s render_name function must return a string (found %s)"):format(self.name, type(value)))
+				render_err:throw("%s render_name function must return a string (found %s)", self.name, type(value))
 			end, self)
 		end
 
 		-- if a string or function is defined to be appended, evaluate it
 		if self.options.render_append then
 			append = utility.evaluate_string(self.options.render_append, function(value)
-				error(("render: %s render_append function must return a string (found %s)"):format(self.name, type(value)))
+				render_err:throw("%s render_append function must return a string (found %s)", self.name, type(value))
 			end, self)
 		end
 

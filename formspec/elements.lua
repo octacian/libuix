@@ -8,7 +8,19 @@ local queue = utility.Queue:new()
 -- Elements --
 --------------
 
-queue:positioned("container", {}, {contains = "Variation"})
+queue:positioned("container", {}, {contains = {
+	validate = "Variation",
+	environment = function(self)
+		return self.parent.elements
+	end,
+	render = function(self, form)
+		local contained = ""
+		for _, item in ipairs(self.items) do
+			contained = contained .. item:render(form)
+		end
+		return contained .. self.name .. "_end[]"
+	end
+}})
 
 queue:element("list", {
 	{ "inventory_location", "string" },
@@ -173,6 +185,37 @@ queue:rect("textarea", {
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false }
+})
+
+queue:rect("dropdown", {
+	{ "name", "string", hidden = true, generate = true },
+	{ "items", "string", hidden = true },
+	{ "selected", "number" }
+}, {
+	child_elements = function(builder)
+		builder:element("item", {
+			{ "label", "string" }
+		}, { render_raw = true })
+	end,
+	contains = {
+		validate = function(self, items)
+			for index, item in pairs(items) do
+				if type(item) == "string" then
+					items[index] = self.child_elements.item({ label = item })
+				else
+					items[index] = self.child_elements.item(item)
+				end
+			end
+		end,
+		render = function(self, form)
+			local contained = ""
+			for _, item in pairs(self.items) do
+				contained = contained .. item:render(form) .. ";"
+			end
+			return contained:sub(1, -2)
+		end,
+		render_target = "items"
+	}
 })
 
 -------------

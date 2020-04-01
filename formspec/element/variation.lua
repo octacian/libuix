@@ -7,16 +7,40 @@ local utility = import("utility.lua")
 local Variation = utility.make_class("Variation")
 
 -- Creates a new skeleton instance of the variation.
-function Variation:new(parent, name, fields, options)
+function Variation:new(parent, name, fields, options, child_elements)
 	if utility.DEBUG then
-		utility.enforce_types({"FormspecManager", "string", "table", "table?"}, parent, name, fields, options)
+		utility.enforce_types({"FormspecManager", "string", "table", "table?", "table?"},
+			parent, name, fields, options, child_elements)
 
 		if options then
 			table.constrain(options, {
-				{"contains", "string", required = false},
+				{"contains", "table", required = false},
 				{"render_name", "string|function", required = false},
-				{"render_append", "string|function", required = false}
+				{"render_append", "string|function", required = false},
+				{"render_raw", "boolean", required = false}
 			})
+
+			if options.contains then
+				table.constrain(options.contains, {
+					{"validate", "string|function"},
+					{"environment", "table|function", required = false},
+					{"render", "function"},
+					{"render_target", "string", required = false}
+				})
+
+				if options.contains.render_target then
+					local found = false
+					for _, field in pairs(fields) do
+						if field[1] == options.contains.render_target then
+							found = true
+						end
+					end
+
+					if not found then
+						error(("variation: %s render_target '%s' does not exist"):format(name, options.contains.render_target))
+					end
+				end
+			end
 		end
 	end
 
@@ -24,7 +48,8 @@ function Variation:new(parent, name, fields, options)
 		parent = parent,
 		name = name,
 		fields = fields,
-		options = options
+		options = options,
+		child_elements = child_elements
 	}
 
 	setmetatable(instance, Variation)
@@ -47,14 +72,31 @@ end
 -- Collects definition and, if enabled, a list of contained items.
 function Variation:__call(def)
 	if self.options and self.options.contains then
-		-- Add element functions to the global environment if contained items should be elements.
-		if self.options.contains == "Variation" then
-			setfenv(2, self.parent.elements)
+		-- if the environment table is actually a function, call it
+		if type(self.options.contains.environment) == "function" then
+			self.options.contains.environment = self.options.contains.environment(self)
+		end
+
+		-- if an environment table is provided, add it to the global environment
+		if self.options.contains.environment then
+			setmetatable(self.options.contains.environment, { __index = _G })
+			setfenv(2, self.options.contains.environment)
 		end
 
 		return function(items)
-			if utility.DEBUG then utility.enforce_array(items, self.options.contains) end
-			setfenv(2, getmetatable(self.parent.elements).__index) -- Remove Elements from the global environment.
+			if utility.DEBUG then
+				if type(self.options.contains.validate) == "string" then
+					utility.enforce_array(items, self.options.contains.validate)
+				else
+					self.options.contains.validate(self, items)
+				end
+			end
+
+			-- if an environment table is provided, remove it from the global environment
+			if self.options.contains.environment then
+				setfenv(2, getmetatable(self.options.contains.environment).__index)
+			end
+
 			return self:populate_new(def, items)
 		end
 	end
@@ -128,39 +170,39 @@ function Variation:render(form)
 		return ""
 	end
 
+	local contained = ""
+	-- if the variant contains items, render them
+	if self.options and self.options.contains then
+		contained = self.options.contains.render(self, form)
+	end
+
+	local handle_container_target = self.options and self.options.contains and self.options.contains.render_target
 	local fieldstring = ""
 	for index, field in pairs(self.fields) do
-		if field.internal ~= true then
+		local separator = field.separator
+		if separator == nil then separator = ";" end
+
+		if handle_container_target and self.options.contains.render_target == field[1] then
+			fieldstring = fieldstring .. contained .. separator
+			handle_container_target = false
+			contained = ""
+		elseif field.internal ~= true then
 			local def_index = self.field_map[index]
 			local value = self.def[def_index]
 			if field.generate and (field.hidden or value == nil) then
 				self.generated_def[field[1]] = tostring(form:new_id())
 				value = self.generated_def[field[1]]
 			elseif value == nil then value = "" end
-			local separator = field.separator
-			if separator == nil then separator = ";" end
 			fieldstring = fieldstring .. tostring(value) .. separator
 		end
 	end
 
 	fieldstring = fieldstring:sub(1, -2)
 
-	local contained = ""
 	local name = self.name
 	local append = ""
 	-- if there are options defined, investigate them
 	if self.options then
-		-- if the element is a container, render items
-		if self.options.contains then
-			if self.options.contains == "Variation" then
-				for _, item in ipairs(self.items) do
-					contained = contained .. item:render(form)
-				end
-			else error("elements containing non-Variation types are not yet supported") end
-
-			contained = contained .. self.name .. "_end[]"
-		end
-
 		-- if a custom render name is defined, evaluate it
 		if self.options.render_name then
 			name = utility.evaluate_string(self.options.render_name, function(value)
@@ -173,6 +215,11 @@ function Variation:render(form)
 			append = utility.evaluate_string(self.options.render_append, function(value)
 				error(("render: %s render_append function must return a string (found %s)"):format(self.name, type(value)))
 			end, self)
+		end
+
+		-- if the raw render mode is enabled, return immediately
+		if self.options.render_raw then
+			return fieldstring .. contained .. append
 		end
 	end
 

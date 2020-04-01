@@ -100,6 +100,9 @@ describe("Variation", function()
 
 			local RenderAppend = Variation:new(manager, "render_append_spec", {field_name}, { render_append = "label[0,0;Hi]" })
 			assert.are.same("render_append_spec[John]label[0,0;Hi]", RenderAppend({ name = "John" }):render(form))
+
+			local RenderRaw = Variation:new(manager, "render_raw_spec", {field_name, {"x", "number"}}, { render_raw = true })
+			assert.are.same("John;10", RenderRaw({ name = "John", x = 10 }):render(form))
 		end)
 	end)
 
@@ -112,18 +115,59 @@ describe("Variation", function()
 		assert.are.equal("boolean_spec[false]", Example({ option = false }):render(form))
 	end)
 
-	it("supports container elements", function()
-		Example = Variation:new(manager, "container_spec", {
-			{"x", "number", separator = ","},
-			{"y", "number"}
-		}, {contains = "Variation"})
+	describe("supports container elements", function()
+		it("encapsulating other elements", function()
+			Example = Variation:new(manager, "container_spec", {
+				{"x", "number", separator = ","},
+				{"y", "number"}
+			}, {contains = {
+				validate = "Variation",
+				environment = function(self)
+					return self.parent.elements
+				end,
+				render = function(self, render_form)
+					local contained = ""
+					for _, item in ipairs(self.items) do
+						contained = contained .. item:render(render_form)
+					end
+					return contained .. self.name .. "_end[]"
+				end
+			}})
 
-		local populated
-		assert.has_no.error(function()
-			populated = Example { x = 15, y = 7 } {
-				text { x = 0, y = 0, text = "Hello!" }
-			}
+			local populated
+			assert.has_no.error(function()
+				populated = Example { x = 15, y = 7 } {
+					text { x = 0, y = 0, text = "Hello!" }
+				}
+			end)
+			assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render(form))
 		end)
-		assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render(form))
+
+		it("encapsulating custom structures", function()
+			Example = Variation:new(manager, "custom_container_spec", {
+				{"x", "number"},
+				{"items", "string", hidden = true }
+			}, {contains = {
+				validate = function(self, items)
+					for _, item in pairs(items) do
+						if type(item) ~= "string" then
+							error("Expected string!")
+						end
+					end
+				end,
+				render = function(self, _)
+					return table.concat(self.items, ",")
+				end,
+				render_target = "items"
+			}})
+
+			local populated
+			assert.has_no.error(function()
+				populated = Example { x = 10 } {
+					"hello", "world"
+				}
+			end)
+			assert.are.equal("custom_container_spec[10;hello,world]", populated:render(form))
+		end)
 	end)
 end)

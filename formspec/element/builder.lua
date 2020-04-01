@@ -56,18 +56,27 @@ function Builder:add(name, positioned, resizable, fields, options)
 
 	insert(fields, default_fields._if)
 
+	local child_elements
+	-- if the options table contains a child elements function, build the elements
+	if options and type(options.child_elements) == "function" then
+		local child_builder = Builder:new(self.parent)
+		options.child_elements(child_builder)
+		options.child_elements = nil
+		child_elements = child_builder.elements
+	end
+
 	-- if this is a new element, insert a Variation instance
 	if not self.elements[name] then
-		self.elements[name] = Variation:new(self.parent, name, fields, options)
+		self.elements[name] = Variation:new(self.parent, name, fields, options, child_elements)
 		return
 	-- if this element already exists but there is only a Variation entry, convert it to an Element
 	elseif self.elements[name] and utility.type(self.elements[name]) == "Variation" then
 		local element = Element:new(self.parent, name)
-		element:add_variation(self.elements[name].fields, self.elements[name].options)
+		element:add_variation(self.elements[name].fields, self.elements[name].options, self.elements[name].child_elements)
 		self.elements[name] = element
 	end
 
-	self.elements[name]:add_variation(fields, options)
+	self.elements[name]:add_variation(fields, options, child_elements)
 end
 
 -------------

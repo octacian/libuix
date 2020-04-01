@@ -147,3 +147,16 @@ test("field", nil, "0,0;2,1;*;;", { x = 0, y = 0, w = 2, h = 1, type = "text",
 test("textarea", nil, "0,0;5,5;*;;", { x = 0, y = 0, w = 5, h = 5 })
 test("textarea", nil, "0,0;5,5;*;Text;", { x = 0, y = 0, w = 5, h = 5, label = "Text" })
 test("textarea", nil, "0,0;5,5;*;;abcdefg", { x = 0, y = 0, w = 5, h = 5, default = "abcdefg" })
+
+describe("'dropdown' element", function()
+	it("takes (x, y, w, h, selected: number) and contains an arbitrary number of sub-items", function()
+		local populated
+		(function()
+			populated = manager.elements.dropdown { x = 0, y = 0, w = 2, h = 1, selected = 1 } {
+				"one",
+				{ label = "two" }
+			}
+		end)()
+		assert.are.similar(populated:render(form), "dropdown[0,0;2,1;*;one;two;1]")
+	end)
+end)

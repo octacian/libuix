@@ -4,6 +4,7 @@ _G.modpath = "."
 local form = require("tests/mock").Form:new()
 local FormspecManager = require("tests/mock").FormspecManager
 local Builder = require("formspec/element/builder")
+local utility = require("utility")
 
 describe("Builder", function()
 	local instance = Builder:new(FormspecManager:new("builder_spec"))
@@ -28,6 +29,15 @@ describe("Builder", function()
 			assert.are.same({ "x", "y" }, instance.elements.builder_spec({ x = 20, y = 30 }):map_fields())
 			assert.are.equal("builder_spec[20;Johnny]", instance.elements.builder_spec({ x = 20, name = "Johnny" }):render(form))
 			assert.are.equal("builder_spec[20;32]", instance.elements.builder_spec({ x = 20, y = 32 }):render(form))
+		end)
+
+		it("can generate a sub-table of child elements", function()
+			instance:add("child_elements_spec", false, false, { "x", "number" }, {
+				child_elements = function(builder)
+					builder:add("item", false, false, { "label", "string" })
+				end
+			})
+			assert.are.equal("Variation", utility.type(instance.elements.child_elements_spec.child_elements.item))
 		end)
 	end)
 

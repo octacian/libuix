@@ -22,9 +22,9 @@ function Element:new(parent, name)
 end
 
 -- Adds a variation to the element.
-function Element:add_variation(fields, options)
-	if utility.DEBUG then utility.enforce_types({"table", "table?"}, fields, options) end
-	self.variations[#self.variations + 1] = Variation:new(self.parent, self.name, fields, options)
+function Element:add_variation(fields, options, child_elements)
+	if utility.DEBUG then utility.enforce_types({"table", "table?", "table?"}, fields, options, child_elements) end
+	self.variations[#self.variations + 1] = Variation:new(self.parent, self.name, fields, options, child_elements)
 end
 
 -- Chooses a single variation based on an arbitrary definition and returns it directly.

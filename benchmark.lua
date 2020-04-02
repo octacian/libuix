@@ -74,6 +74,56 @@ end
 
 benchmark.errorbuilder()
 
+-----------------------
+-- Placeholder Class --
+-----------------------
+
+function benchmark.placeholder()
+	local Placeholder = import("placeholder.lua")
+
+	local key
+	Benchmark("Create placeholder:", BENCHMARK_COUNT, function()
+		for i = 1, RENDER_COUNT do
+			key = Placeholder.index("name")
+		end
+	end)
+
+	local env = {person = {}}
+	Benchmark("Set value:\t", BENCHMARK_COUNT, function()
+		for i = 1, RENDER_COUNT do
+			Placeholder.set(env, key, "John Doe")
+		end
+	end)
+
+	Benchmark("Evaluate placeholder:", BENCHMARK_COUNT, function()
+		for i = 1, RENDER_COUNT do
+			Placeholder.evaluate(env, key)
+		end
+	end)
+
+	Benchmark("Create deep index:", BENCHMARK_COUNT, function()
+		for i = 1, RENDER_COUNT do
+			key = Placeholder.index("person").name
+		end
+	end)
+
+	Benchmark("Set deep value:\t", BENCHMARK_COUNT, function()
+		for i = 1, RENDER_COUNT do
+			Placeholder.set(env, key, "John")
+		end
+	end)
+
+	Benchmark("Evaluate deep index:", BENCHMARK_COUNT, function()
+		for i = 1, RENDER_COUNT do
+			Placeholder.index(env, key)
+		end
+	end)
+
+	print()
+end
+
+benchmark.placeholder()
+
 ---------------------
 -- Variation Class --
 ---------------------

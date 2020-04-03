@@ -3,7 +3,8 @@ allow_defined_top = true
 
 globals = {
 	"table",
-	"minetest"
+	"minetest",
+	"model"
 }
 
 read_globals = {
@@ -14,8 +15,8 @@ read_globals = {
 	"vector", "ItemStack",
 	"dump", "DIR_DELIM", "VoxelArea", "Settings",
 
-	"libuix", "import",
+	"libuix", "import", "ui",
 
-	-- libuix elements
-	"list", "listring", "listcolors", "image", "text",
+	-- libuix operator replacement functions
+	"eq", "ne", "lt", "gt", "le", "ge", "land", "lor", "lnot"
 }

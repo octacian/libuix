@@ -16,13 +16,13 @@ Let's create and show a very simple formspec with just three elements:
 
 ```lua
 uix:formspec("example") { w = 5, h = 5 } {
-	field { x = 0, y = 1, w = 5, h = 1, label = "Message:", _model = "message" },
-	button { x = 0, y = 2.5, w = 5, h = 1, label = "Submit", _click = "submit" },
-	text { x = 0, y = 4, _if = "message ~= ''", _text = "You said: ${message}" }
+	ui.field { x = 0, y = 1, w = 5, h = 1, label = "Message:", bind = model.message },
+	ui.button { x = 0, y = 2.5, w = 5, h = 1, label = "Submit", click = model.submit },
+	ui.text { x = 0, y = 4, visible = ne(model.message, ""), text = "You said: " .. model.message }
 } {
 	message = "",
-	submit = function(self)
-		print("Hey! " .. self._player_name .. " submitted our form!")
+	submit = function()
+		print("Hey! " .. model._player_name .. " submitted our form!")
 	end
 }
 
@@ -33,7 +33,7 @@ And just in case you're not a fan of having to type the name of each property, y
 
 ```lua
 {
-	field { 0, 1, 5, 1, "Message:", _model = "message" }
+	ui.field { 0, 1, 5, 1, "Message:", bind = model.message }
 }
 ```
 

@@ -3,6 +3,7 @@ local utility = import("utility.lua")
 local Form = import("formspec/form.lua")
 local Model = import("formspec/model.lua")
 local Elements = import("formspec/elements.lua")
+local Placeholder = import("placeholder.lua")
 
 ---------------------------
 -- FormspecManager Class --
@@ -16,8 +17,10 @@ function FormspecManager:new(parent)
 	local instance = { parent = parent, forms = {} }
 	setmetatable(instance, FormspecManager)
 
-	instance.elements = Elements(instance)
-	setmetatable(instance.elements, { __index = _G })
+	local elements = Elements(instance)
+	instance.elements = { ui = elements }
+	Placeholder.new_listener(instance.elements)
+	instance.original_env = getfenv(2)
 
 	return instance
 end
@@ -33,7 +36,7 @@ function FormspecManager:__call(name)
 		return function(elements)
 			-- Accept data model table.
 			return function(model)
-				setfenv(2, getmetatable(self.elements).__index) -- Remove Elements from the global environment.
+				setfenv(2, self.original_env) -- Remove Elements from the global environment.
 				self.forms[#self.forms + 1] = Form:new(self, name, options, elements, Model:new(model))
 			end
 		end

@@ -1,4 +1,5 @@
 local utility = import("utility.lua")
+local Placeholder = import("placeholder.lua")
 
 ---------------------
 -- Variation Class --
@@ -25,8 +26,11 @@ function Variation:new(parent, name, fields, options, child_elements)
 				table.constrain(options.contains, {
 					{"validate", "string|function"},
 					{"environment", "table|function", required = false},
+					{"environment_namespace", "string", required = false},
+					{"environment_ready", "boolean", required = false},
 					{"render", "function"},
-					{"render_target", "string", required = false}
+					{"render_target", "string", required = false},
+					{"bind_model", "boolean", required = false}
 				})
 
 				if options.contains.render_target then
@@ -41,6 +45,10 @@ function Variation:new(parent, name, fields, options, child_elements)
 				end
 			end
 		end
+	end
+
+	if options and options.contains and not options.contains.environment_namespace then
+		options.contains.environment_namespace = "ui"
 	end
 
 	local instance = {
@@ -76,9 +84,28 @@ function Variation:__call(def)
 			self.options.contains.environment = self.options.contains.environment(self)
 		end
 
+		local original_env
 		-- if an environment table is provided, add it to the global environment
 		if self.options.contains.environment then
-			setmetatable(self.options.contains.environment, { __index = _G })
+			if not self.options.contains.environment_ready then
+				-- if the environment namepsace is not disabled, nest the environment in a namespace
+				if self.options.contains.environment_namespace ~= "" then
+					local env = self.options.contains.environment
+					self.options.contains.environment = {}
+					self.options.contains.environment[self.options.contains.environment_namespace] = env
+				end
+
+				-- if model binding is not explicity disabled, add Placeholder listeners to the environment
+				if self.options.contains.bind_model ~= false then
+					Placeholder.new_listener(self.options.contains.environment)
+				else -- otherwise, inherit the entire global environment
+					setmetatable(self.options.contains.environment, { __index = _G })
+				end
+
+				self.options.contains.environment_ready = true
+			end
+
+			original_env = getfenv(2)
 			setfenv(2, self.options.contains.environment)
 		end
 
@@ -93,7 +120,7 @@ function Variation:__call(def)
 
 			-- if an environment table is provided, remove it from the global environment
 			if self.options.contains.environment then
-				setfenv(2, getmetatable(self.options.contains.environment).__index)
+				setfenv(2, original_env)
 			end
 
 			return self:populate_new(def, items)
@@ -137,15 +164,18 @@ function Variation:validate()
 			validate_err:throw("%s property '%s' is not optional", self.name, field[1])
 		end
 
-		-- if the value of the data stored in the definition field does not match the expected type, throw an error
-		if def_field ~= nil and type(def_field) ~= field[2] then
-			validate_err:throw("%s property '%s' must be a %s (found %s)", self.name, field[1], field[2], type(def_field))
-		end
+		-- if the value is a function or Placeholder, we can just ignore it
+		if not utility.check_type(def_field, "function|Placeholder") then
+			-- if the value of the data stored in the definition field does not match the expected type, throw an error
+			if def_field ~= nil and type(def_field) ~= field[2] then
+				validate_err:throw("%s property '%s' must be a %s (found %s)", self.name, field[1], field[2], type(def_field))
+			end
 
-		-- if the variation requires a specific value, check it and throw an error if it isn't satisfied
-		if field[3] and def_field ~= field[3] then
-			validate_err:throw("%s property '%s' must be a %s with value %s (found %s with value %s)", self.name, field[1],
-				field[2], dump(field[3]), type(def_field), dump(def_field))
+			-- if the variation requires a specific value, check it and throw an error if it isn't satisfied
+			if field[3] and def_field ~= field[3] then
+				validate_err:throw("%s property '%s' must be a %s with value %s (found %s with value %s)", self.name, field[1],
+					field[2], dump(field[3]), type(def_field), dump(def_field))
+			end
 		end
 	end
 
@@ -160,12 +190,70 @@ function Variation:validate()
 	return true
 end
 
+local evaluate_env = {
+	eq = Placeholder.is.eq, ne = Placeholder.is.ne, lt = Placeholder.is.lt, gt = Placeholder.is.gt, le = Placeholder.is.le,
+	ge = Placeholder.is.ge, land = Placeholder.logical.l_and, lor = Placeholder.logical.l_or,
+	lnot = Placeholder.logical.l_not
+}
+local function_call_env = {}
+setmetatable(evaluate_env, { __index = _G })
+setmetatable(function_call_env, { __index = _G })
+local evaluate_err = utility.ErrorBuilder:new("Variation:evaluate")
+-- Takes the index of a field in self.fields and returns the corresponding value from the definition. If the value is a
+-- placeholder or function the value is extracted and checked for validity. If the value is nil and the field is to be
+-- generated, a new ID is fetched from the parent form. An error is thrown if anything is invalid.
+function Variation:evaluate(form, field_index)
+	local field_def = self.fields[field_index]
+	local value = self.def[self.field_map[field_index]]
+	evaluate_env.model = form.model
+	function_call_env.model = form.model
+
+	while utility.check_type(value, "Placeholder|function") do
+		-- if the value is a function, call it until it isn't
+		while type(value) == "function" do
+			setfenv(value, function_call_env)
+			value = value()
+		end
+
+		-- if the value is a placeholder, evaluate it
+		if utility.type(value) == "Placeholder" then
+			value = Placeholder.evaluate(evaluate_env, value, function_call_env)
+		end
+	end
+
+	-- if the value should be generated, fetch a new ID from the parent form and return immediately
+	if field_def.generate and (field_def.hidden or value == nil) then
+		self.generated_def[field_def[1]] = tostring(form:new_id())
+		return self.generated_def[field_def[1]]
+	end
+
+	-- if the value is nil and the field is required, throw an error
+	if value == nil and field_def.required ~= false and field_def.hidden ~= true then
+		evaluate_err:throw("%s property '%s' evaluated to nil but the property is not optional", self.name, field_def[1])
+	end
+
+	-- if the new value does not match the expected type, throw an error
+	if value ~= nil and type(value) ~= field_def[2] then
+		evaluate_err:throw("%s property '%s' evaluated to a %s but the property requires a %s", self.name, field_def[1],
+			type(value), field_def[2])
+	end
+
+	-- if a specific value is required, check it and throw an error if it isn't satisfied
+	if field_def[3] and value ~= field_def[3] then
+		evaluate_err:throw("%s property '%s' evaluated to a %s with value %s but the property requires a %s with value %s",
+			self.name, field_def[1], type(value), dump(value), field_def[2], field_def[3])
+	end
+
+	if value == nil then return ""
+	else return value end
+end
+
 local render_err = utility.ErrorBuilder:new("Variation:render")
 -- Renders a variation given a form as context.
 function Variation:render(form)
 	if utility.DEBUG then utility.enforce_types({"Form"}, form) end
 
-	-- Obey _if visibility control.
+	-- Obey visibility control.
 	if self.def._if and not form.model:_evaluate(self.def._if) then
 		return ""
 	end
@@ -187,13 +275,7 @@ function Variation:render(form)
 			handle_container_target = false
 			contained = ""
 		elseif field.internal ~= true then
-			local def_index = self.field_map[index]
-			local value = self.def[def_index]
-			if field.generate and (field.hidden or value == nil) then
-				self.generated_def[field[1]] = tostring(form:new_id())
-				value = self.generated_def[field[1]]
-			elseif value == nil then value = "" end
-			fieldstring = fieldstring .. tostring(value) .. separator
+			fieldstring = fieldstring .. tostring(self:evaluate(form, index)) .. separator
 		end
 	end
 

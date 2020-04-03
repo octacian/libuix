@@ -81,7 +81,7 @@ describe("'container' element", function()
 		local populated
 		(function()
 			populated = manager.elements.container { x = 2, y = 2 } {
-				text { x = 0, y = 0, text = "Hello!" }
+				ui.text { x = 0, y = 0, text = "Hello!" }
 			}
 		end)()
 		assert.are.equal("container[2,2]label[0,0;Hello!]container_end[]", populated:render(form))

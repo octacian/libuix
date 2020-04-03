@@ -10,12 +10,13 @@ describe("FormspecManager", function()
 	local instance = FormspecManager:new(UIXInstance:new("unit_test"))
 
 	it("collects formspec name, options, elements, and model for addition to the instance", function()
-		assert.has_no.error(function()
+		-- assert.has_no.error(function()
 			instance("manager_spec") { w = 5, h = 10 } {
-				text { x = 0, y = 0, text = "Hello!" }
-			} {}
-		end)
+				ui.text { x = 0, y = model.text_y, text = "Hello!" }
+			} { text_y = 0 }
+		-- end)
 
+		assert.are.equal("Placeholder", utility.type(instance.forms[1].elements[1].def.y))
 		assert.are.equal("Hello!", instance.forms[1].elements[1].def.text)
 	end)
 

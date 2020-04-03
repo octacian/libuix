@@ -224,7 +224,7 @@ function benchmark.container_element()
 	local populated
 	Benchmark("Prepare container:", BENCHMARK_COUNT, function()
 		populated = Elements.container { x = 0, y = 0 } {
-			text { x = 0, y = 0, text = "Hello world!" }
+			ui.text { x = 0, y = 0, text = "Hello world!" }
 		}
 	end)
 

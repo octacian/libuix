@@ -6,6 +6,8 @@ local manager = mock.FormspecManager:new(nil, require("formspec/elements"))
 local form = mock.Form:new()
 local Variation = require("formspec/element/variation")
 local Model = require("formspec/model")
+local Placeholder = require("placeholder")
+local utility = require("utility")
 
 local field_name = { "name", "string" }
 local Example = Variation:new(manager, "variation_spec", {
@@ -69,6 +71,47 @@ describe("Variation", function()
 				"libuix->Variation:validate: variation_spec does not support property 'nothing'")
 			assert.has_error(function() Example({ 20, name = "John", ignore = true }):validate() end,
 				"libuix->Variation:validate: variation_spec does not support property 'ignore'")
+		end)
+	end)
+
+	describe("evaluate", function()
+		local Evaluate = Variation:new(manager, "evaluate_spec", {
+			{ "type", "number", 1 },
+			{ "x", "number" },
+			{ "name", "string", hidden = true, generate = true },
+			{ "text", "string" },
+			{ "visible", "boolean", required = false }
+		})
+
+		local env = mock.Form:new(nil, {
+			another = true, control = Placeholder.index("model").another,show = function() return model.control end
+		})
+
+		it("returns a field from the definition table", function()
+			local populated = Evaluate {
+				type = 1, x = 10, text = function() return function() return "Hello!" end end,
+				visible = Placeholder.index("model").show
+			}
+
+			assert.are.equal(1, populated:evaluate(env, 1))
+			assert.are.equal(10, populated:evaluate(env, 2))
+			assert.are.equal("0", populated:evaluate(env, 3))
+			assert.are.equal("Hello!", populated:evaluate(env, 4))
+			assert.is_true(populated:evaluate(env, 5))
+		end)
+
+		it("throws an error when values do not conform to variant rules", function()
+			local populated = Evaluate {
+				type = function() return 2 end, x = Placeholder.index("model").show; text = Placeholder.index("model").message
+			}
+
+			assert.has_error(function() populated:evaluate(env, 1) end, "libuix->Variation:evaluate: evaluate_spec property "
+				.. "'type' evaluated to a number with value 2 but the property requires a number with value 1")
+			assert.has_error(function() populated:evaluate(env, 2) end, "libuix->Variation:evaluate: evaluate_spec property 'x' "
+				.. "evaluated to a boolean but the property requires a number")
+			assert.has_error(function() populated:evaluate(env, 4) end, "libuix->Variation:evaluate: evaluate_spec property "
+				.. "'text' evaluated to nil but the property is not optional")
+			assert.are.equal("", populated:evaluate(env, 5))
 		end)
 	end)
 
@@ -137,10 +180,13 @@ describe("Variation", function()
 			local populated
 			assert.has_no.error(function()
 				populated = Example { x = 15, y = 7 } {
-					text { x = 0, y = 0, text = "Hello!" }
+					ui.text { x = 0, y = model.text_y, text = "Hello!" }
 				}
 			end)
-			assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render(form))
+
+			assert.are.equal("Placeholder", utility.type(populated.items[1].def.y))
+			local env = mock.Form:new(nil, { text_y = 0 })
+			assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render(env))
 		end)
 
 		it("encapsulating custom structures", function()

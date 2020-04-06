@@ -10,6 +10,20 @@ local Variation = utility.make_class("Variation")
 local new_err = utility.ErrorBuilder:new("Variation:new")
 -- Creates a new skeleton instance of the variation.
 function Variation:new(parent, name, fields, options, child_elements)
+	if options and options.contains and not options.contains.environment_namespace then
+		options.contains.environment_namespace = "ui"
+	end
+
+	local instance = {
+		parent = parent,
+		name = name,
+		fields = fields,
+		options = options,
+		child_elements = child_elements,
+		field_names = {}
+	}
+	setmetatable(instance, Variation)
+
 	if utility.DEBUG then
 		utility.enforce_types({"FormspecManager", "string", "table", "table?", "table?"},
 			parent, name, fields, options, child_elements)
@@ -33,34 +47,26 @@ function Variation:new(parent, name, fields, options, child_elements)
 					{"bind_model", "boolean", required = false}
 				})
 
-				if options.contains.render_target then
-					local found = false
-					for _, field in pairs(fields) do
-						if field[1] == options.contains.render_target then
-							found = true
-						end
-					end
-
-					new_err:assert(found, "%s contains no fields matching render_target '%s'", name, options.contains.render_target)
+				if options.contains.render_target and not instance:get_field_by_name(options.contains.render_target) then
+					new_err:throw("%s contains no fields matching render_target '%s'", name, options.contains.render_target)
 				end
 			end
 		end
 	end
 
-	if options and options.contains and not options.contains.environment_namespace then
-		options.contains.environment_namespace = "ui"
-	end
-
-	local instance = {
-		parent = parent,
-		name = name,
-		fields = fields,
-		options = options,
-		child_elements = child_elements
-	}
-
-	setmetatable(instance, Variation)
 	return instance
+end
+
+-- Returns a field by name.
+function Variation:get_field_by_name(name)
+	if self.field_names[name] then return self.fields[self.field_names[name]] end
+
+	for index, field in pairs(self.fields) do
+		if field[1] == name then
+			self.field_names[name] = index
+			return field
+		end
+	end
 end
 
 -- Duplicates and populates a skeleton instance with an arbitrary definition, returning the newly created duplicate.
@@ -71,7 +77,7 @@ function Variation:populate_new(def, items)
 	instance.generated_def = {}
 	setmetatable(instance.def, { __index = instance.generated_def })
 	instance.items = items
-	instance.field_map = instance:map_fields()
+	instance:map_fields()
 	instance:validate()
 	return instance
 end
@@ -130,9 +136,11 @@ function Variation:__call(def)
 	return self:populate_new(def)
 end
 
--- Returns a map of the indexes of the fields array to the indexes of the definition. Must be called before validate.
+-- Maps field indexes to definition keys, definition keys to field indexes, and field names to field indexes. Must be
+-- called before validate.
 function Variation:map_fields()
-	local field_map = {}
+	self.field_map = {}
+	self.def_map = {}
 	local positional_keys_used = 0
 	for index, field in pairs(self.fields) do
 		local def_key = field[1]
@@ -146,11 +154,12 @@ function Variation:map_fields()
 		end
 
 		if def_field ~= nil then
-			field_map[index] = def_key
+			self.field_map[index] = def_key
+			self.def_map[def_key] = index
 		end
-	end
 
-	return field_map
+		self.field_names[field[1]] = index
+	end
 end
 
 local validate_err = utility.ErrorBuilder:new("Variation:validate")
@@ -162,6 +171,11 @@ function Variation:validate()
 		-- if def_field is still nil, the field wasn't defined, throw an error
 		if def_field == nil and field.required ~= false and field.hidden ~= true and field.generate ~= true then
 			validate_err:throw("%s property '%s' is not optional", self.name, field[1])
+		end
+
+		-- if the field was defined and it is hidden, throw an error
+		if def_field ~= nil and field.hidden then
+			validate_err:throw("%s property '%s' is hidden and cannot be given a value", self.name, field[1])
 		end
 
 		-- if the value is a function or Placeholder, we can just ignore it
@@ -179,10 +193,9 @@ function Variation:validate()
 		end
 	end
 
-	local inverted_map = table.invert(self.field_map)
 	-- Loop over definition to check for extra keys
 	for def_key, _ in pairs(self.def) do
-		if not inverted_map[def_key] or self.fields[inverted_map[def_key]].hidden then
+		if not self.def_map[def_key] then
 			validate_err:throw("%s does not support property '%s'", self.name, def_key)
 		end
 	end

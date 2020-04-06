@@ -25,10 +25,19 @@ local AutoGen = Variation:new(manager, "auto_gen_spec", {
 describe("Variation", function()
 	local instance = Example({ 20, name = "Example * 9.8", 32 })
 
+	describe("get_field_by_name", function()
+		it("returns a field given its name", function()
+			local field = Example:get_field_by_name("name")
+			assert.are.same(field_name, field)
+		end)
+	end)
+
 	describe("map_fields", function()
 		it("maps definition fields to those defined at the creation of the variation", function()
-			local field_map = instance:map_fields()
-			assert.are.same({1, "name", 2}, field_map)
+			instance:map_fields()
+			assert.are.same({1, "name", 2}, instance.field_map)
+			assert.are.same({[1] = 1, [2] = 3, name = 2}, instance.def_map)
+			assert.are.same({x = 1, name = 2, y = 3, _if = 4, ignore = 5}, instance.field_names)
 		end)
 	end)
 
@@ -70,7 +79,7 @@ describe("Variation", function()
 			assert.has_error(function() Example({ 20, nothing = true, name = "Yeah! This broke something!" }):validate() end,
 				"libuix->Variation:validate: variation_spec does not support property 'nothing'")
 			assert.has_error(function() Example({ 20, name = "John", ignore = true }):validate() end,
-				"libuix->Variation:validate: variation_spec does not support property 'ignore'")
+				"libuix->Variation:validate: variation_spec property 'ignore' is hidden and cannot be given a value")
 		end)
 	end)
 

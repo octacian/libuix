@@ -25,8 +25,6 @@ describe("Builder", function()
 				{ "x", "number" },
 				{ "y", "number" }
 			})
-			assert.are.same({ "x", "name" }, instance.elements.builder_spec({ x = 20, name = "Johnny" }):map_fields())
-			assert.are.same({ "x", "y" }, instance.elements.builder_spec({ x = 20, y = 30 }):map_fields())
 			assert.are.equal("builder_spec[20;Johnny]", instance.elements.builder_spec({ x = 20, name = "Johnny" }):render(form))
 			assert.are.equal("builder_spec[20;32]", instance.elements.builder_spec({ x = 20, y = 32 }):render(form))
 		end)
@@ -47,6 +45,7 @@ describe("Builder", function()
 			instance:element("builder_element", {})
 			local expected = {
 				builder_element = {
+					field_names = {},
 					parent = {modname = "builder_spec"},
 					name = "builder_element",
 					fields = {instance.default_fields._if},

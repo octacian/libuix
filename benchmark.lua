@@ -55,6 +55,8 @@ function minetest.get_modpath()
 	return "."
 end
 
+function minetest.register_on_player_receive_fields() end
+
 local shared_form = import("formspec/form.lua"):new(mock.FormspecManager:new(), "shared_form", {}, {},
 	import("formspec/model.lua"):new({}))
 

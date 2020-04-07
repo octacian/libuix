@@ -466,6 +466,24 @@ local function evaluate_string(value, err, ...)
 	else return tostring(value) end
 end
 
+----------------------
+-- String Utilities --
+----------------------
+
+-- Splits a string and returns a table. Based on https://gist.github.com/jaredallard/ddb152179831dd23b230.
+function string.split(str, delimiter)
+	local result = {}
+	local from = 1
+	local delim_from, delim_to = string.find(str, delimiter, from)
+	while delim_from do
+		table.insert( result, string.sub(str, from , delim_from-1))
+		from = delim_to + 1
+		delim_from, delim_to = string.find(str, delimiter, from)
+	end
+	table.insert(result, string.sub(str, from))
+	return result
+end
+
 -----------------
 -- Queue Class --
 -----------------
@@ -537,5 +555,6 @@ return {
 	static_table = static_table,
 	make_class = make_class,
 	evaluate_string = evaluate_string,
+	split = string.split,
 	Queue = Queue
 }

@@ -1,7 +1,7 @@
 local utility = import("utility.lua")
 local Builder = import("formspec/element/builder.lua")
 
-local field = Builder.default_fields
+local fields = Builder.default_fields
 local queue = utility.Queue:new()
 
 --------------
@@ -25,7 +25,7 @@ queue:positioned("container", {}, {contains = {
 queue:element("list", {
 	{ "inventory_location", "string" },
 	{ "list_name", "string" },
-	field.x, field.y, field.w, field.h,
+	fields.x, fields.y, fields.w, fields.h,
 	{ "starting_item_index", "number", required = false }
 })
 
@@ -70,8 +70,9 @@ queue:rect("image", {
 	{ "texture_name", "string" },
 	{ "frame_count", "number" },
 	{ "frame_duration", "number" },
-	{ "frame_start", "number", required = false }
-}, { render_name = "animated_image" })
+	{ "frame_start", "number", required = false },
+	{ "update", "function", required = false, internal = true },
+}, { render_name = "animated_image", receive_fields = { callback = "update", pass_field = true } })
 
 queue:rect("image", {
 	{ "type", "string", "item", internal = true },
@@ -116,23 +117,26 @@ end
 queue:rect("button", {
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
-	{ "exit", "boolean", required = false, internal = true }
-}, { render_name = button_render_name_modifier("button") })
+	{ "exit", "boolean", required = false, internal = true },
+	{ "click", "function", required = false, internal = true }
+}, { render_name = button_render_name_modifier("button"), receive_fields = { callback = "click" } })
 
 queue:rect("button", {
 	{ "type", "string", "standard", internal = true },
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
-	{ "exit", "boolean", required = false, internal = true }
-}, { render_name = button_render_name_modifier("button") })
+	{ "exit", "boolean", required = false, internal = true },
+	{ "click", "function", required = false, internal = true }
+}, { render_name = button_render_name_modifier("button"), receive_fields = { callback = "click" } })
 
 queue:rect("button", {
 	{ "type", "string", "image", internal = true },
 	{ "texture_name", "string" },
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
-	{ "exit", "boolean", required = false, internal = true }
-}, { render_name = button_render_name_modifier("image_button") })
+	{ "exit", "boolean", required = false, internal = true },
+	{ "click", "function", required = false, internal = true }
+}, { render_name = button_render_name_modifier("image_button"), receive_fields = { callback = "click" } })
 
 queue:rect("button", {
 	{ "type", "string", "image", internal = true },
@@ -142,16 +146,18 @@ queue:rect("button", {
 	{ "noclip", "boolean" },
 	{ "drawborder", "boolean" },
 	{ "pressed_texture_name", "string" },
-	{ "exit", "boolean", required = false, internal = true }
-}, { render_name = button_render_name_modifier("image_button") })
+	{ "exit", "boolean", required = false, internal = true },
+	{ "click", "function", required = false, internal = true }
+}, { render_name = button_render_name_modifier("image_button"), receive_fields = { callback = "click" } })
 
 queue:rect("button", {
 	{ "type", "string", "item", internal = true },
 	{ "item_name", "string" },
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string" },
-	{ "exit", "boolean", required = false, internal = true }
-}, { render_name = "item_image_button" })
+	{ "exit", "boolean", required = false, internal = true },
+	{ "click", "function", required = false, internal = true }
+}, { render_name = "item_image_button", receive_fields = { callback = "click" } })
 
 local field_append_modifier = function(self)
 	if self.def.close_on_enter == false then
@@ -159,50 +165,68 @@ local field_append_modifier = function(self)
 	else return "" end
 end
 
+local field_receive_fields = {
+	callback = "enter",
+	pass_field = true
+}
+
 queue:rect("field", {
 	{ "type", "string", "password", internal = true },
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
-	{ "close_on_enter", "boolean", required = false, internal = true }
-}, { render_name = "pwdfield", render_append = field_append_modifier })
+	{ "close_on_enter", "boolean", required = false, internal = true },
+	{ "enter", "function", required = false, internal = true },
+}, { render_name = "pwdfield", render_append = field_append_modifier, receive_fields = field_receive_fields })
 
 queue:rect("field", {
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false },
-	{ "close_on_enter", "boolean", required = false, internal = true }
-}, { render_append = field_append_modifier })
+	{ "close_on_enter", "boolean", required = false, internal = true },
+	{ "enter", "function", required = false, internal = true }
+}, { render_append = field_append_modifier, receive_fields = field_receive_fields })
 
 queue:rect("field", {
 	{ "type", "string", "text", internal = true },
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false },
-	{ "close_on_enter", "boolean", required = false, internal = true }
-}, { render_append = field_append_modifier })
+	{ "close_on_enter", "boolean", required = false, internal = true },
+	{ "enter", "function", required = false, internal = true }
+}, { render_append = field_append_modifier, receive_fields = field_receive_fields })
 
 queue:rect("textarea", {
 	{ "name", "string", hidden = true, generate = true },
 	{ "label", "string", required = false },
-	{ "default", "string", required = false }
-})
+	{ "default", "string", required = false },
+	{ "enter", "function", required = false, internal = true }
+}, { receive_fields = field_receive_fields })
 
 queue:rect("dropdown", {
 	{ "name", "string", hidden = true, generate = true },
 	{ "items", "string", hidden = true },
 	{ "selected", "number" }
 }, {
+	receive_fields = { callback = function(self, form, player, field)
+		for _, item in pairs(self.items) do
+			if item:evaluate_by_name(form, "label") == field then
+				item:receive_fields(form, player, field)
+				break
+			end
+		end
+	end },
 	child_elements = function(builder)
 		builder:element("item", {
-			{ "label", "string" }
-		}, { render_raw = true })
+			{ "label", "string" },
+			{ "select", "function", required = false, internal = true }
+		}, { render_raw = true, receive_fields = { callback = "select" } })
 	end,
 	contains = {
 		validate = function(self, items)
 			for index, item in pairs(items) do
 				if type(item) == "string" then
 					items[index] = self.child_elements.item({ label = item })
-				else
+				elseif type(item) == "table" then
 					items[index] = self.child_elements.item(item)
 				end
 			end

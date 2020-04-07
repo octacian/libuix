@@ -98,6 +98,17 @@ function Form:show(player_name)
 	minetest.show_formspec(player_name, self.parent.parent.modname .. ":" .. self.name, formstring)
 end
 
+-- Handles received fields.
+function Form:receive_fields(player, fields)
+	for key, field in pairs(fields) do
+		for _, variant in pairs(self.elements) do
+			if key == variant.def.name then
+				variant:receive_fields(self, player, field)
+			end
+		end
+	end
+end
+
 -------------
 -- Exports --
 -------------

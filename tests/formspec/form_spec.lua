@@ -5,6 +5,7 @@ _G.minetest = {}
 local manager = require("tests/mock").FormspecManager:new("form_spec")
 manager.parent = {modname = "form_spec"}
 
+require("utility")
 local model = require("formspec/model"):new({})
 local Form = require("formspec/form")
 
@@ -73,6 +74,26 @@ describe("Form", function()
 			assert.has_no.error(function() form:show("singleplayer") end)
 			assert.are.same({"singleplayer", "form_spec:form_render", "size[5,10]real_coordinates[true]"},
 				last_show_formspec_call)
+		end)
+	end)
+
+	describe("receive_fields", function()
+		it("passes received fields to the corresponding variation instances", function()
+			local output = ""
+			local skeleton = {
+				def = {},
+				receive_fields = function(self, _, player, _) output = self.def.name .. " received input from " .. player end
+			}
+			setmetatable(skeleton, {__class_name = "Variation"})
+
+			local one = table.copy(skeleton)
+			one.def.name = "one"
+			local two = table.copy(skeleton)
+			two.def.name = "two"
+
+			local ReceiveFields = Form:new(manager, "form_receive_fields", {w = 5, h = 10}, {one, two}, model)
+			ReceiveFields:receive_fields("oct", {one = true})
+			assert.are.equal(output, "one received input from oct", output)
 		end)
 	end)
 end)

@@ -33,8 +33,16 @@ function Variation:new(parent, name, fields, options, child_elements)
 				{"contains", "table", required = false},
 				{"render_name", "string|function", required = false},
 				{"render_append", "string|function", required = false},
-				{"render_raw", "boolean", required = false}
+				{"render_raw", "boolean", required = false},
+				{"receive_fields", "table", required = false}
 			})
+
+			if options.receive_fields then
+				table.constrain(options.receive_fields, {
+					{"callback", "string|function"},
+					{"pass_field", "boolean", required = false}
+				})
+			end
 
 			if options.contains then
 				table.constrain(options.contains, {
@@ -216,22 +224,16 @@ local evaluate_err = utility.ErrorBuilder:new("Variation:evaluate")
 -- placeholder or function the value is extracted and checked for validity. If the value is nil and the field is to be
 -- generated, a new ID is fetched from the parent form. An error is thrown if anything is invalid.
 function Variation:evaluate(form, field_index)
+	if utility.DEBUG then utility.enforce_types({"Form", "number"}, form, field_index) end
+
 	local field_def = self.fields[field_index]
 	local value = self.def[self.field_map[field_index]]
 	evaluate_env.model = form.model
 	function_call_env.model = form.model
 
-	while utility.check_type(value, "Placeholder|function") do
-		-- if the value is a function, call it until it isn't
-		while type(value) == "function" do
-			setfenv(value, function_call_env)
-			value = value()
-		end
-
-		-- if the value is a placeholder, evaluate it
-		if utility.type(value) == "Placeholder" then
-			value = Placeholder.evaluate(evaluate_env, value, function_call_env)
-		end
+	-- if the value is a placeholder, evaluate it until it isn't
+	while utility.type(value) == "Placeholder" do
+		value = Placeholder.evaluate(evaluate_env, value, function_call_env)
 	end
 
 	-- if the value should be generated, fetch a new ID from the parent form and return immediately
@@ -259,6 +261,20 @@ function Variation:evaluate(form, field_index)
 
 	if value == nil then return ""
 	else return value end
+end
+
+-- Takes a field name and returns the corresponding value from the definition. Returns nil, false if the field doesn't
+-- exist. If it exists, evaluate_by_name returns the value, true.
+function Variation:evaluate_by_name(form, field_name)
+	if utility.DEBUG then utility.enforce_types({"Form", "string"}, form, field_name) end
+
+	for index, field in pairs(self.fields) do
+		if field[1] == field_name then
+			return self:evaluate(form, index), true
+		end
+	end
+
+	return nil, false
 end
 
 local render_err = utility.ErrorBuilder:new("Variation:render")
@@ -319,6 +335,29 @@ function Variation:render(form)
 	end
 
 	return name .. "[" .. fieldstring .. "]" .. contained .. append
+end
+
+-- Handle received fields.
+function Variation:receive_fields(form, player, field)
+	if utility.DEBUG then utility.enforce_types({"Form"}, form) end
+
+	if self.options and self.options.receive_fields then
+		if type(self.options.receive_fields.callback) == "function" then
+			self.options.receive_fields.callback(self, form, player, field)
+		else
+			local value = self:evaluate_by_name(form, self.options.receive_fields.callback)
+			if value then
+				local pass_field
+				if self.options.receive_fields.pass_field then pass_field = field end
+
+				setfenv(value, _G)
+				value(player, pass_field)
+			end
+
+			-- TODO: Warn if the field defined in self.options.receive_fields doesn't exist.
+		end
+	end
+	-- TODO: If self.options.receive_fields is missing, warn of unhandled fields.
 end
 
 -------------

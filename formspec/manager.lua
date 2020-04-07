@@ -5,6 +5,8 @@ local Model = import("formspec/model.lua")
 local Elements = import("formspec/elements.lua")
 local Placeholder = import("placeholder.lua")
 
+local on_receive_fields = {}
+
 ---------------------------
 -- FormspecManager Class --
 ---------------------------
@@ -22,6 +24,7 @@ function FormspecManager:new(parent)
 	Placeholder.new_listener(instance.elements)
 	instance.original_env = getfenv(2)
 
+	on_receive_fields[#on_receive_fields + 1] = instance
 	return instance
 end
 
@@ -63,7 +66,29 @@ function FormspecManager:get_index(name)
 	end
 end
 
--- TODO: Handle formspec submissions.
+-- Handle received fields.
+function FormspecManager:receive_fields(player, formname, fields)
+	local split = formname:split(":")
+	if #split == 2 and split[1] == self.parent.modname then
+		local form = self:get(split[2])
+		if form then
+			form:receive_fields(player, fields)
+			return true
+		end
+	end
+end
+
+---------------------------------
+-- Handle Formspec Submissions --
+---------------------------------
+
+minetest.register_on_player_receive_fields(function(player, formname, fields)
+	for _, manager in pairs(on_receive_fields) do
+		if manager:receive_fields(player, formname, fields) then
+			break
+		end
+	end
+end)
 
 -------------
 -- Exports --

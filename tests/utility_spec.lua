@@ -15,6 +15,7 @@ local enforce_types = require("utility").enforce_types
 local enforce_array = require("utility").enforce_array
 local make_class = require("utility").make_class
 local evaluate_string = require("utility").evaluate_string
+local split = require("utility").split
 local Queue = require("utility").Queue
 
 local HELLO_MSG = "Hello!"
@@ -296,5 +297,12 @@ describe("evaluate_string", function()
 		assert.has_error(function()
 			evaluate_string(function() return 32 end, function(val) error("found " .. type(val)) end)
 		end, "found number")
+	end)
+end)
+
+describe("string.split", function()
+	it("uses a delimiter to split a string and returns a table", function()
+		local result = split("hello:world", ":")
+		assert.are.same({"hello", "world"}, result)
 	end)
 end)

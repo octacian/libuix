@@ -1,6 +1,7 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
+require("utility")
 local say = require("say")
 local form = require("tests/mock").Form:new(nil)
 form.model = require("formspec/model"):new({})
@@ -35,16 +36,16 @@ say:set("assertion.similar.negative", "Expected strings to be different.\nPassed
 assert:register("assertion", "similar", similar, "assertion.similar.positive",
 	"assertion.similar.negative")
 
-function test(name, expected_name, expected, fields, append_str)
+function test(name, expected_name, expected, def, append_str, input_callback_name, input_pass_field)
 	if not expected_name then expected_name = name end
 	if not append_str then append_str = "" end
 
 	local message = "takes "
-	if fields == nil or table.count(fields) == 0 then
+	if def == nil or table.count(def) == 0 then
 		message = "has no fields"
 	else
 		local types = {}
-		for _, field in pairs(fields) do
+		for _, field in pairs(def) do
 			local type_name = type(field)
 			if not types[type_name] then types[type_name] = 0
 			else types[type_name] = types[type_name] + 1 end
@@ -71,7 +72,21 @@ function test(name, expected_name, expected, fields, append_str)
 
 	describe(("'%s' element"):format(name), function()
 		it(message, function()
-			assert.similar(manager.elements[name](fields):render(form), ("%s[%s]%s"):format(expected_name, expected, append_str))
+			local callback_output = ""
+			if input_callback_name then
+				def[input_callback_name] = function(player, field)
+					callback_output = "Caught input from " .. player .. " with field " .. dump(field)
+				end
+			end
+
+			local populated
+			assert.has_no.error(function() populated = manager.elements[name](def) end)
+			assert.similar(populated:render(form), ("%s[%s]%s"):format(expected_name, expected, append_str))
+
+			if input_callback_name then
+				populated:receive_fields(form, "John", input_pass_field)
+				assert.are.equal("Caught input from John with field " .. dump(input_pass_field), callback_output)
+			end
 		end)
 	end)
 end
@@ -104,9 +119,9 @@ test("listcolors", nil, "one;two;three;four;five", {
 test("image", nil, "0,0;5,5;img.png", { x = 0, y = 0, w = 5, h = 5, texture_name = "img.png" })
 test("image", nil, "0,0;5,5;img.png", { x = 0, y = 0, w = 5, h = 5, type = "standard", texture_name = "img.png" })
 test("image", "animated_image", "0,0;5,5;*;anim.png;10;500;", { x = 0, y = 0, w = 5, h = 5, type = "animated",
-	texture_name = "anim.png", frame_count = 10, frame_duration = 500 })
+	texture_name = "anim.png", frame_count = 10, frame_duration = 500 }, nil, "update", 10)
 test("image", "animated_image", "0,0;5,5;*;anim.png;10;500;2", { x = 0, y = 0, w = 5, h = 5, type = "animated",
-	texture_name = "anim.png", frame_count = 10, frame_duration = 500, frame_start = 2 })
+	texture_name = "anim.png", frame_count = 10, frame_duration = 500, frame_start = 2 }, nil, "update", 10)
 test("image", "item_image", "0,0;5,5;default:stick", { x = 0, y = 0, w = 5, h = 5, type = "item",
 	item_name = "default:stick" })
 test("text", "label", "0,0;Hello!", { x = 0, y = 0, text = "Hello!" })
@@ -117,46 +132,51 @@ test("text", "hypertext", "0,0;5,5;*;Hello!", { x = 0, y = 0, w = 5, h = 5, type
 test("button", nil, "0,0;2,1;*;Press Me!", { x = 0, y = 0, w = 2, h = 1, label = "Press Me!" })
 test("button", "button_exit", "0,0;2,1;*;Press Me!", { x = 0, y = 0, w = 2, h = 1, label = "Press Me!",
 	exit = true })
-test("button", nil, "0,0;2,1;*;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "standard", label = "Press Me!" })
+test("button", nil, "0,0;2,1;*;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "standard", label = "Press Me!" }, nil,
+	"click")
 test("button", "button_exit", "0,0;2,1;*;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "standard",
-	label = "Press Me!", exit = true })
+	label = "Press Me!", exit = true }, nil, "click")
 test("button", "image_button", "0,0;2,1;btn.png;*;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "image",
-	texture_name = "btn.png", label = "Press Me!"})
+	texture_name = "btn.png", label = "Press Me!"}, nil, "click")
 test("button", "image_button", "0,0;2,1;btn.png;*;Press Me!;true;true;pressed.png", { x = 0, y = 0, w = 2, h = 1,
 	type = "image", texture_name = "btn.png", label = "Press Me!", noclip = true, drawborder = true,
-	pressed_texture_name = "pressed.png"})
+	pressed_texture_name = "pressed.png"}, nil, "click")
 test("button", "image_button_exit", "0,0;2,1;btn.png;*;Press Me!", { x = 0, y = 0, w = 2, h = 1, type = "image",
-	texture_name = "btn.png", label = "Press Me!", exit = true})
+	texture_name = "btn.png", label = "Press Me!", exit = true}, nil, "click")
 test("button", "image_button_exit", "0,0;2,1;btn.png;*;Press Me!;true;true;pressed.png", { x = 0, y = 0, w = 2, h = 1,
 	type = "image", texture_name = "btn.png", label = "Press Me!", noclip = true, drawborder = true,
-	pressed_texture_name = "pressed.png", exit = true})
+	pressed_texture_name = "pressed.png", exit = true}, nil, "click")
 test("button", "item_image_button", "0,0;1,1;default:stick;*;Press Me!", { x = 0, y = 0, w = 1, h = 1, type = "item",
-	item_name = "default:stick", label = "Press Me!"})
-test("field", "pwdfield", "0,0;2,1;*;", { x = 0, y = 0, w = 2, h = 1, type = "password" })
-test("field", "pwdfield", "0,0;2,1;*;Password", { x = 0, y = 0, w = 2, h = 1, type = "password", label = "Password" })
+	item_name = "default:stick", label = "Press Me!"}, nil, "click")
+test("field", "pwdfield", "0,0;2,1;*;", { x = 0, y = 0, w = 2, h = 1, type = "password" }, nil, "enter", "Hello!")
+test("field", "pwdfield", "0,0;2,1;*;Password", { x = 0, y = 0, w = 2, h = 1, type = "password", label = "Password" },
+	nil, "enter", "Hello!")
 test("field", "pwdfield", "0,0;2,1;*;Password", { x = 0, y = 0, w = 2, h = 1, type = "password", label = "Password",
-	close_on_enter = false }, "field_close_on_enter[*;false]")
-test("field", nil, "0,0;2,1;*;;", { x = 0, y = 0, w = 2, h = 1 })
-test("field", nil, "0,0;2,1;*;Input;", { x = 0, y = 0, w = 2, h = 1, label = "Input" })
-test("field", nil, "0,0;2,1;*;;abcdef", { x = 0, y = 0, w = 2, h = 1, default = "abcdef" })
+	close_on_enter = false }, "field_close_on_enter[*;false]", "enter", "Hello!")
+test("field", nil, "0,0;2,1;*;;", { x = 0, y = 0, w = 2, h = 1 }, nil, "enter", "Hello!")
+test("field", nil, "0,0;2,1;*;Input;", { x = 0, y = 0, w = 2, h = 1, label = "Input" }, nil, "enter", "Hello!")
+test("field", nil, "0,0;2,1;*;;abcdef", { x = 0, y = 0, w = 2, h = 1, default = "abcdef" }, nil, "enter", "Hello!")
 test("field", nil, "0,0;2,1;*;;", { x = 0, y = 0, w = 2, h = 1, close_on_enter = false },
-	"field_close_on_enter[*;false]")
-test("field", nil, "0,0;2,1;*;;", { x = 0, y = 0, w = 2, h = 1, type = "text" })
+	"field_close_on_enter[*;false]", "enter", "Hello!")
+test("field", nil, "0,0;2,1;*;;", { x = 0, y = 0, w = 2, h = 1, type = "text" }, nil, "enter", "Hello!")
 test("field", nil, "0,0;2,1;*;;", { x = 0, y = 0, w = 2, h = 1, type = "text",
-	close_on_enter = false }, "field_close_on_enter[*;false]")
-test("textarea", nil, "0,0;5,5;*;;", { x = 0, y = 0, w = 5, h = 5 })
-test("textarea", nil, "0,0;5,5;*;Text;", { x = 0, y = 0, w = 5, h = 5, label = "Text" })
-test("textarea", nil, "0,0;5,5;*;;abcdefg", { x = 0, y = 0, w = 5, h = 5, default = "abcdefg" })
+	close_on_enter = false }, "field_close_on_enter[*;false]", "enter", "Hello!")
+test("textarea", nil, "0,0;5,5;*;;", { x = 0, y = 0, w = 5, h = 5 }, nil, "enter", "Hello!")
+test("textarea", nil, "0,0;5,5;*;Text;", { x = 0, y = 0, w = 5, h = 5, label = "Text" }, nil, "enter", "Hello!")
+test("textarea", nil, "0,0;5,5;*;;abcdefg", { x = 0, y = 0, w = 5, h = 5, default = "abcdefg" }, nil, "enter", "Hello!")
 
 describe("'dropdown' element", function()
 	it("takes (x, y, w, h, selected: number) and contains an arbitrary number of sub-items", function()
+		local output = ""
 		local populated
 		(function()
 			populated = manager.elements.dropdown { x = 0, y = 0, w = 2, h = 1, selected = 1 } {
 				"one",
-				{ label = "two" }
+				{ label = "two", select = function() output = "Selected two!" end }
 			}
 		end)()
 		assert.are.similar(populated:render(form), "dropdown[0,0;2,1;*;one;two;1]")
+		populated:receive_fields(form, nil, "two")
+		assert.are.equal("Selected two!", output)
 	end)
 end)

@@ -3,12 +3,13 @@ allow_defined_top = true
 
 globals = {
 	"table",
+	"string",
 	"minetest",
 	"model"
 }
 
 read_globals = {
-	string = {fields = {"split"}},
+	--string = {fields = {"split"}},
 	--table = {fields = {"copy", "getn"}},
 
 	-- Builtin

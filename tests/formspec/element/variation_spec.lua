@@ -93,13 +93,12 @@ describe("Variation", function()
 		})
 
 		local env = mock.Form:new(nil, {
-			another = true, control = Placeholder.index("model").another,show = function() return model.control end
+			type = 2, another = true, show = Placeholder.index("model").another
 		})
 
 		it("returns a field from the definition table", function()
 			local populated = Evaluate {
-				type = 1, x = 10, text = function() return function() return "Hello!" end end,
-				visible = Placeholder.index("model").show
+				type = 1, x = 10, text = "Hello!", visible = Placeholder.index("model").show
 			}
 
 			assert.are.equal(1, populated:evaluate(env, 1))
@@ -111,7 +110,8 @@ describe("Variation", function()
 
 		it("throws an error when values do not conform to variant rules", function()
 			local populated = Evaluate {
-				type = function() return 2 end, x = Placeholder.index("model").show; text = Placeholder.index("model").message
+				type = Placeholder.index("model").type, x = Placeholder.index("model").show,
+				text = Placeholder.index("model").control
 			}
 
 			assert.has_error(function() populated:evaluate(env, 1) end, "libuix->Variation:evaluate: evaluate_spec property "
@@ -121,6 +121,23 @@ describe("Variation", function()
 			assert.has_error(function() populated:evaluate(env, 4) end, "libuix->Variation:evaluate: evaluate_spec property "
 				.. "'text' evaluated to nil but the property is not optional")
 			assert.are.equal("", populated:evaluate(env, 5))
+		end)
+	end)
+
+	describe("evaluate_by_name", function()
+		it("returns a field, identified by name, from the definition table", function()
+			local EvaluateByName = Variation:new(manager, "evaluate_by_name_spec", {
+				{"x", "number"}
+			})
+
+			local populated = EvaluateByName { 28 }
+			local x, x_exists = populated:evaluate_by_name(form, "x")
+			assert.are.equal(28, x)
+			assert.is_true(x_exists)
+
+			local y, y_exists = populated:evaluate_by_name(form, "y")
+			assert.is_nil(y)
+			assert.is_false(y_exists)
 		end)
 	end)
 
@@ -223,6 +240,44 @@ describe("Variation", function()
 				}
 			end)
 			assert.are.equal("custom_container_spec[10;hello,world]", populated:render(form))
+		end)
+	end)
+
+	describe("receive_fields", function()
+		it("handles formspec input and runs callbacks", function()
+			local output = ""
+			local receive_fields_def = {
+				{"name", "string", hidden = true, generate = true},
+				{"click", "function", required = false}
+			}
+			local on_click = function(player, field)
+				output = "Received click from " .. player .. " with field " .. tostring(field)
+			end
+
+			local ReceiveFields = Variation:new(manager, "receive_fields_spec", receive_fields_def,
+				{receive_fields = {callback = "click"}})
+
+			local populated = ReceiveFields { click = on_click }
+			populated:receive_fields(form, "oct", true)
+			assert.are.equal("Received click from oct with field nil", output)
+
+			local ReceiveFieldsFunc = Variation:new(manager, "receive_fields_func_spec", receive_fields_def, {
+				receive_fields = { callback = function(_, _, player, field)
+					output = "Received input from " .. player
+				end }
+			})
+
+			populated = ReceiveFieldsFunc {}
+			populated:receive_fields(form, "oct", true)
+			assert.are.equal("Received input from oct", output)
+
+			local ReceiveFieldsWithField = Variation:new(manager, "receive_fields_with_field_spec", receive_fields_def, {
+				receive_fields = {callback = "click", pass_field = true}
+			})
+
+			populated = ReceiveFieldsWithField { click = on_click }
+			populated:receive_fields(form, "oct", true)
+			assert.are.equal("Received click from oct with field true", output)
 		end)
 	end)
 end)

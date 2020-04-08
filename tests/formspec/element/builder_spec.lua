@@ -37,6 +37,17 @@ describe("Builder", function()
 			})
 			assert.are.equal("Variation", utility.type(instance.elements.child_elements_spec.child_elements.item))
 		end)
+
+		it("can expand a set of special field types", function()
+			instance:add("special_type_spec", false, false, {
+				{ type = "name" },
+				{ type = "callback", "click" }
+			})
+
+			local variant = instance.elements.special_type_spec
+			assert.are.same({ "name", "string", hidden = true, generate = true }, variant.fields[1])
+			assert.are.same({ "click", "function", required = false, internal = true }, variant.fields[2])
+		end)
 	end)
 
 	describe("element", function()

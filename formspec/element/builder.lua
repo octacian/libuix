@@ -56,6 +56,15 @@ function Builder:add(name, positioned, resizable, fields, options)
 
 	insert(fields, default_fields._if)
 
+	-- Check fields for special types that need to be expanded.
+	for index, field in pairs(fields) do
+		if field.type == "name" then
+			fields[index] = {"name", "string", hidden = true, generate = true}
+		elseif field.type == "callback" then
+			fields[index] = {field[1], "function", required = false, internal = true}
+		end
+	end
+
 	local child_elements
 	-- if the options table contains a child elements function, build the elements
 	if options and type(options.child_elements) == "function" then

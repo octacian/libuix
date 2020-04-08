@@ -66,12 +66,12 @@ queue:rect("image", {
 
 queue:rect("image", {
 	{ "type", "string", "animated", internal = true },
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "texture_name", "string" },
 	{ "frame_count", "number" },
 	{ "frame_duration", "number" },
 	{ "frame_start", "number", required = false },
-	{ "update", "function", required = false, internal = true },
+	{ type = "callback", "update" },
 }, { render_name = "animated_image", receive_fields = { callback = "update", pass_field = true } })
 
 queue:rect("image", {
@@ -102,7 +102,7 @@ queue:rect("text", {
 
 queue:rect("text", {
 	{ "type", "string", "markup", internal = true },
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "text", "string" }
 }, { render_name = "hypertext" })
 
@@ -115,48 +115,48 @@ local button_render_name_modifier = function(base_render_name)
 end
 
 queue:rect("button", {
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string" },
 	{ "exit", "boolean", required = false, internal = true },
-	{ "click", "function", required = false, internal = true }
+	{ type = "callback", "click" }
 }, { render_name = button_render_name_modifier("button"), receive_fields = { callback = "click" } })
 
 queue:rect("button", {
 	{ "type", "string", "standard", internal = true },
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string" },
 	{ "exit", "boolean", required = false, internal = true },
-	{ "click", "function", required = false, internal = true }
+	{ type = "callback", "click" }
 }, { render_name = button_render_name_modifier("button"), receive_fields = { callback = "click" } })
 
 queue:rect("button", {
 	{ "type", "string", "image", internal = true },
 	{ "texture_name", "string" },
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string" },
 	{ "exit", "boolean", required = false, internal = true },
-	{ "click", "function", required = false, internal = true }
+	{ type = "callback", "click" }
 }, { render_name = button_render_name_modifier("image_button"), receive_fields = { callback = "click" } })
 
 queue:rect("button", {
 	{ "type", "string", "image", internal = true },
 	{ "texture_name", "string" },
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string" },
 	{ "noclip", "boolean" },
 	{ "drawborder", "boolean" },
 	{ "pressed_texture_name", "string" },
 	{ "exit", "boolean", required = false, internal = true },
-	{ "click", "function", required = false, internal = true }
+	{ type = "callback", "click" }
 }, { render_name = button_render_name_modifier("image_button"), receive_fields = { callback = "click" } })
 
 queue:rect("button", {
 	{ "type", "string", "item", internal = true },
 	{ "item_name", "string" },
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string" },
 	{ "exit", "boolean", required = false, internal = true },
-	{ "click", "function", required = false, internal = true }
+	{ type = "callback", "click" }
 }, { render_name = "item_image_button", receive_fields = { callback = "click" } })
 
 local field_append_modifier = function(self)
@@ -172,38 +172,38 @@ local field_receive_fields = {
 
 queue:rect("field", {
 	{ "type", "string", "password", internal = true },
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string", required = false },
 	{ "close_on_enter", "boolean", required = false, internal = true },
-	{ "enter", "function", required = false, internal = true },
+	{ type = "callback", "enter" },
 }, { render_name = "pwdfield", render_append = field_append_modifier, receive_fields = field_receive_fields })
 
 queue:rect("field", {
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false },
 	{ "close_on_enter", "boolean", required = false, internal = true },
-	{ "enter", "function", required = false, internal = true }
+	{ type = "callback", "enter" }
 }, { render_append = field_append_modifier, receive_fields = field_receive_fields })
 
 queue:rect("field", {
 	{ "type", "string", "text", internal = true },
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false },
 	{ "close_on_enter", "boolean", required = false, internal = true },
-	{ "enter", "function", required = false, internal = true }
+	{ type = "callback", "enter" }
 }, { render_append = field_append_modifier, receive_fields = field_receive_fields })
 
 queue:rect("textarea", {
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "label", "string", required = false },
 	{ "default", "string", required = false },
-	{ "enter", "function", required = false, internal = true }
+	{ type = "callback", "enter" }
 }, { receive_fields = field_receive_fields })
 
 queue:rect("dropdown", {
-	{ "name", "string", hidden = true, generate = true },
+	{ type = "name" },
 	{ "items", "string", hidden = true },
 	{ "selected", "number" }
 }, {
@@ -218,7 +218,7 @@ queue:rect("dropdown", {
 	child_elements = function(builder)
 		builder:element("item", {
 			{ "label", "string" },
-			{ "select", "function", required = false, internal = true }
+			{ type = "callback", "select" }
 		}, { render_raw = true, receive_fields = { callback = "select" } })
 	end,
 	contains = {

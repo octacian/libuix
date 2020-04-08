@@ -1,13 +1,14 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
+
 local mock = require("tests/mock")
 local manager = mock.FormspecManager:new(nil, require("formspec/elements"))
 local form = mock.Form:new()
 local Variation = require("formspec/element/variation")
 local Model = require("formspec/model")
 local Placeholder = require("placeholder")
-local utility = require("utility")
+local types = require("types")
 
 local field_name = { "name", "string" }
 local Example = Variation:new(manager, "variation_spec", {
@@ -21,6 +22,8 @@ local Example = Variation:new(manager, "variation_spec", {
 local AutoGen = Variation:new(manager, "auto_gen_spec", {
 	{ "name", "string", generate = true }
 })
+
+-----------------------------------------------------------------------------------------------------------------------
 
 describe("Variation", function()
 	local instance = Example({ 20, name = "Example * 9.8", 32 })
@@ -210,7 +213,7 @@ describe("Variation", function()
 				}
 			end)
 
-			assert.are.equal("Placeholder", utility.type(populated.items[1].def.y))
+			assert.are.equal("Placeholder", types.get(populated.items[1].def.y))
 			local env = mock.Form:new(nil, { text_y = 0 })
 			assert.are.equal("container_spec[15,7]label[0,0;Hello!]container_spec_end[]", populated:render(env))
 		end)

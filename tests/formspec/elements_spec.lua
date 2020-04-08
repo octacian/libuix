@@ -1,9 +1,10 @@
 package.path = "../?.lua;" .. package.path
 _G.libuix = {}
 _G.modpath = "."
-require("utility")
-local say = require("say")
+
 local form = require("tests/mock").Form:new(nil)
+local tables = require("tables")
+local say = require("say")
 form.model = require("formspec/model"):new({})
 local manager = require("tests/mock").FormspecManager:new(nil, require("formspec/elements"))
 
@@ -41,7 +42,7 @@ function test(name, expected_name, expected, def, append_str, input_callback_nam
 	if not append_str then append_str = "" end
 
 	local message = "takes "
-	if def == nil or table.count(def) == 0 then
+	if def == nil or tables.count(def) == 0 then
 		message = "has no fields"
 	else
 		local types = {}
@@ -75,7 +76,7 @@ function test(name, expected_name, expected, def, append_str, input_callback_nam
 			local callback_output = ""
 			if input_callback_name then
 				def[input_callback_name] = function(player, field)
-					callback_output = "Caught input from " .. player .. " with field " .. dump(field)
+					callback_output = "Caught input from " .. player .. " with field " .. tables.dump(field)
 				end
 			end
 
@@ -85,7 +86,7 @@ function test(name, expected_name, expected, def, append_str, input_callback_nam
 
 			if input_callback_name then
 				populated:receive_fields(form, "John", input_pass_field)
-				assert.are.equal("Caught input from John with field " .. dump(input_pass_field), callback_output)
+				assert.are.equal("Caught input from John with field " .. tables.dump(input_pass_field), callback_output)
 			end
 		end)
 	end)

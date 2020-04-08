@@ -18,6 +18,16 @@ function import(name)
 	return cache[name]
 end
 
+---------------------
+-- Global Controls --
+---------------------
+
+local UNIT_TEST = os.getenv("UNIT_TEST")
+local DEBUG = os.getenv("DEBUG")
+
+if UNIT_TEST == "TRUE" then _G.UNIT_TEST = true else _G.UNIT_TEST = false end
+if DEBUG == "TRUE" then _G.DEBUG = true else _G.DEBUG = false end
+
 --------------------
 -- Load Resources --
 --------------------

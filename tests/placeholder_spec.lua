@@ -1,7 +1,7 @@
 package.path = "../?.lua;" .. package.path
 
 require("tests/mock")
-local utility = require("utility")
+local types = require("types")
 local Placeholder = require("placeholder")
 
 describe("Placeholder", function()
@@ -11,7 +11,7 @@ describe("Placeholder", function()
 			Placeholder.new_listener(temp_env)
 
 			local name = temp_env.person.name()
-			assert.are.equal("Placeholder", utility.type(name))
+			assert.are.equal("Placeholder", types.get(name))
 
 			assert.has_error(function() temp_env.name = "John" end, "libuix->Placeholder.new_listener: attempt to assign value "
 				.. "to key 'name' in access listener")

@@ -1,19 +1,20 @@
-local utility = import("utility.lua")
+local ErrorBuilder = import("errors.lua")
+local types = import("types.lua")
 
 ----------------
 -- Form Class --
 ----------------
 
-local Form = utility.make_class("Form")
+local Form = types.type("Form")
 
 -- Creates a new Form instance.
 function Form:new(parent, name, options, elements, model)
-	if utility.DEBUG then
-		utility.enforce_types({"FormspecManager", "string", "table", "table", "Model"},
+	if DEBUG then
+		types.type({"FormspecManager", "string", "table", "table", "Model"},
 			parent, name, options, elements, model)
-		utility.enforce_array(elements, "Variation")
+		types.force_array(elements, "Variation")
 
-		table.constrain(options, {
+		types.constrain(options, {
 			{"formspec_version", "number", required = false},
 			{"w", "number"},
 			{"h", "number"},
@@ -23,8 +24,8 @@ function Form:new(parent, name, options, elements, model)
 			{"no_prepend", "boolean", required = false},
 			{"real_coordinates", "boolean", required = false}
 		})
-		if options.position then table.constrain(options.position, {{"x", "number"}, {"y", "number"}}) end
-		if options.anchor then table.constrain(options.anchor, {{"x", "number"}, {"y", "number"}}) end
+		if options.position then types.constrain(options.position, {{"x", "number"}, {"y", "number"}}) end
+		if options.anchor then types.constrain(options.anchor, {{"x", "number"}, {"y", "number"}}) end
 	end
 
 	local instance = {
@@ -87,10 +88,10 @@ function Form:render()
 	return formstring
 end
 
-local show_err = utility.ErrorBuilder:new("Form:show", 2)
+local show_err = ErrorBuilder:new("Form:show", 2)
 -- Shows the form to a player who is identified by name.
 function Form:show(player_name)
-	if utility.DEBUG then utility.enforce_types({"string"}, player_name) end
+	if DEBUG then types.type({"string"}, player_name) end
 
 	local formstring = self:render()
 	show_err:assert(formstring ~= "", "formspec %s:%s contains no elements", self.parent.parent.modname, self.name)

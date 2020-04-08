@@ -27,8 +27,6 @@ function Benchmark:stop()
 	print(self.desc .. "\t" .. string.format("%.6f", stop))
 end
 
-local utility = require("./utility")
-
 Benchmark("Print Message:\t", 1, function()
 	print("Hello world! " .. 4 * 90)
 end)
@@ -65,9 +63,11 @@ local shared_form = import("formspec/form.lua"):new(mock.FormspecManager:new(), 
 ------------------------
 
 function benchmark.errorbuilder()
+	local ErrorBuilder = import("errors.lua")
+
 	Benchmark("Create ErrorBuilder:", BENCHMARK_COUNT, function()
 		for i = 1, RENDER_COUNT do
-			utility.ErrorBuilder:new("benchmark.errorbuilder")
+			ErrorBuilder:new("benchmark.errorbuilder")
 		end
 	end)
 

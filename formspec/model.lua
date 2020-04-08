@@ -1,14 +1,14 @@
-local utility = import("utility.lua")
+local types = import("types.lua")
 
 -----------------
 -- Model Class --
 -----------------
 
-local Model = utility.make_class("Model")
+local Model = types.type("Model")
 
 -- Creates a new Model instance.
 function Model:new(data)
-	utility.enforce_types({"table"}, data)
+	types.force({"table"}, data)
 	local instance = data
 	setmetatable(instance, Model)
 	return instance

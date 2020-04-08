@@ -1,8 +1,8 @@
-local utility = import("utility.lua")
+local Queue = import("queue.lua")
 local Builder = import("formspec/element/builder.lua")
 
 local fields = Builder.default_fields
-local queue = utility.Queue:new()
+local queue = Queue:new()
 
 --------------
 -- Elements --

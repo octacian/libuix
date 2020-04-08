@@ -1,4 +1,4 @@
-local utility = import("utility.lua")
+local types = import("types.lua")
 local Variation = import("formspec/element/variation.lua")
 local Element = import("formspec/element/element.lua")
 
@@ -15,12 +15,12 @@ local default_fields = {
 -- Builder Class --
 -------------------
 
-local Builder = utility.make_class("Builder")
+local Builder = types.type("Builder")
 Builder.default_fields = default_fields -- Defaults for use when defining elements
 
 -- Creates a new builder instance with its own element store.
 function Builder:new(parent)
-	if utility.DEBUG then utility.enforce_types({"FormspecManager"}, parent) end
+	if DEBUG then types.force({"FormspecManager"}, parent) end
 
 	local instance = {
 		parent = parent,
@@ -38,7 +38,7 @@ end
 local insert = table.insert
 -- Adds a generic element to the builder.
 function Builder:add(name, positioned, resizable, fields, options)
-	if utility.DEBUG then utility.enforce_types({"string", "boolean", "boolean", "table?", "table?"},
+	if DEBUG then types.force({"string", "boolean", "boolean", "table?", "table?"},
 		name, positioned, resizable, fields, options) end
 
 	if not fields then fields = {} end
@@ -79,7 +79,7 @@ function Builder:add(name, positioned, resizable, fields, options)
 		self.elements[name] = Variation:new(self.parent, name, fields, options, child_elements)
 		return
 	-- if this element already exists but there is only a Variation entry, convert it to an Element
-	elseif self.elements[name] and utility.type(self.elements[name]) == "Variation" then
+	elseif self.elements[name] and types.get(self.elements[name]) == "Variation" then
 		local element = Element:new(self.parent, name)
 		element:add_variation(self.elements[name].fields, self.elements[name].options, self.elements[name].child_elements)
 		self.elements[name] = element

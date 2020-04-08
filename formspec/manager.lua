@@ -1,4 +1,5 @@
-local utility = import("utility.lua")
+local types = import("types.lua")
+local strings = import("strings.lua")
 
 local Form = import("formspec/form.lua")
 local Model = import("formspec/model.lua")
@@ -11,11 +12,11 @@ local on_receive_fields = {}
 -- FormspecManager Class --
 ---------------------------
 
-local FormspecManager = utility.make_class("FormspecManager")
+local FormspecManager = types.type("FormspecManager")
 
 -- Creates a new FormspecManager instance.
 function FormspecManager:new(parent)
-	if utility.DEBUG then utility.enforce_types({"UIXInstance"}, parent) end
+	if DEBUG then types.force({"UIXInstance"}, parent) end
 	local instance = { parent = parent, forms = {} }
 	setmetatable(instance, FormspecManager)
 
@@ -48,7 +49,7 @@ end
 
 -- Gets a formspec by name from the instance.
 function FormspecManager:get(name)
-	if utility.DEBUG then utility.enforce_types({"string"}, name) end
+	if DEBUG then types.force({"string"}, name) end
 	for _, form in pairs(self.forms) do
 		if form.name == name then
 			return form
@@ -58,7 +59,7 @@ end
 
 -- Gets a formspec index by name from the instance.
 function FormspecManager:get_index(name)
-	if utility.DEBUG then utility.enforce_types({"string"}, name) end
+	if DEBUG then types.force({"string"}, name) end
 	for index, form in pairs(self.forms) do
 		if form.name == name then
 			return index
@@ -68,7 +69,7 @@ end
 
 -- Handle received fields.
 function FormspecManager:receive_fields(player, formname, fields)
-	local split = formname:split(":")
+	local split = strings.split(formname, ":")
 	if #split == 2 and split[1] == self.parent.modname then
 		local form = self:get(split[2])
 		if form then

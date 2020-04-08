@@ -1,4 +1,10 @@
-local utility = require("utility")
+--- Global Controls ---
+
+local UNIT_TEST = os.getenv("UNIT_TEST")
+local DEBUG = os.getenv("DEBUG")
+
+if UNIT_TEST == "TRUE" then _G.UNIT_TEST = true else _G.UNIT_TEST = false end
+if DEBUG == "TRUE" then _G.DEBUG = true else _G.DEBUG = false end
 
 --- Import Function ---
 
@@ -9,9 +15,13 @@ function import(name)
 	return f()
 end
 
+-- Imports ---
+
+local types = require("types")
+
 --- FormspecManager Class ---
 
-local FormspecManager = utility.make_class("FormspecManager")
+local FormspecManager = types.type("FormspecManager")
 
 function FormspecManager:new(modname, elements)
 	local instance = {modname = modname}
@@ -27,7 +37,7 @@ end
 
 --- Form Class ---
 
-local Form = utility.make_class("Form")
+local Form = types.type("Form")
 
 function Form:new(name, model)
 	local instance = {name = name, model = model, last_id = -1}
@@ -42,7 +52,7 @@ end
 
 --- UIXInstance Class ---
 
-local UIXInstance = utility.make_class("UIXInstance")
+local UIXInstance = types.type("UIXInstance")
 
 function UIXInstance:new(modname)
 	local instance = {modname = modname}
@@ -52,7 +62,7 @@ end
 
 --- Element Class ---
 
-local Element = utility.make_class("Element")
+local Element = types.type("Element")
 
 function Element:new(parent, name)
 	local instance = {parent = parent, name = name}

@@ -34,12 +34,17 @@ if filter ~= "" then
 	pattern = ("--pattern='%s_spec'"):format(filter)
 end
 
-local debug_env = ""
-if os.getenv("DEBUG") ~= "false" then
-	debug_env = " DEBUG=TRUE"
+local debug_env = "DEBUG=FALSE"
+if os.getenv("DEBUG") ~= "FALSE" then
+	debug_env = "DEBUG=TRUE"
 end
 
-exec(("env MODE=UNIT_TEST%s busted --lua=luajit --coverage %s ."):format(debug_env, pattern))
+local unit_test_env = "UNIT_TEST=FALSE"
+if os.getenv("UNIT_TEST") ~= "FALSE" then
+	unit_test_env = "UNIT_TEST=TRUE"
+end
+
+exec(("env %s %s busted --lua=luajit --coverage %s ."):format(debug_env, unit_test_env, pattern))
 
 local file = io.open(STATS_FILE_NAME, "r")
 local lines = {}

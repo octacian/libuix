@@ -1,15 +1,17 @@
-local utility = import("utility.lua")
+local ErrorBuilder = import("errors.lua")
+local types = import("types.lua")
+local tables = import("tables.lua")
 local Variation = import("formspec/element/variation.lua")
 
 -------------------
 -- Element Class --
 -------------------
 
-local Element = utility.make_class("Element")
+local Element = types.type("Element")
 
 -- Creates a new skeleton instance of the element.
 function Element:new(parent, name)
-	if utility.DEBUG then utility.enforce_types({"FormspecManager", "string"}, parent, name) end
+	if DEBUG then types.force({"FormspecManager", "string"}, parent, name) end
 
 	local instance = {
 		parent = parent,
@@ -23,21 +25,21 @@ end
 
 -- Adds a variation to the element.
 function Element:add_variation(fields, options, child_elements)
-	if utility.DEBUG then utility.enforce_types({"table", "table?", "table?"}, fields, options, child_elements) end
+	if DEBUG then types.force({"table", "table?", "table?"}, fields, options, child_elements) end
 	self.variations[#self.variations + 1] = Variation:new(self.parent, self.name, fields, options, child_elements)
 end
 
-local element_call_err = utility.ErrorBuilder:new("Element", 2)
+local element_call_err = ErrorBuilder:new("Element", 2)
 -- Chooses a single variation based on an arbitrary definition and returns it directly.
 function Element:__call(def)
-	if utility.DEBUG then utility.enforce_types({"table"}, def) end
+	if DEBUG then types.force({"table"}, def) end
 
 	element_call_err:set_postfix(function()
-		return ("%s\n\nAvailable Variations: %s"):format(dump(def), dump(self.variations))
+		return ("%s\n\nAvailable Variations: %s"):format(tables.dump(def), tables.dump(self.variations))
 	end)
 
 	-- Loop over variations and try to find one that accepts the definition as valid.
-	local variation = table.foreach(self.variations, function(variation)
+	local variation = tables.foreach(self.variations, function(variation)
 		local ok, variation_instance = pcall(function()
 			return variation(def)
 		end)

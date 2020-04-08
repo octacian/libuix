@@ -5,8 +5,8 @@ local on_player_receive_fields = {}
 _G.minetest = {
 	register_on_player_receive_fields = function(func) table.insert(on_player_receive_fields, func) end
 }
-local utility = require("utility")
 local UIXInstance = require("tests/mock").UIXInstance
+local types = require("types")
 local FormspecManager = require("formspec/manager")
 
 describe("FormspecManager", function()
@@ -19,14 +19,14 @@ describe("FormspecManager", function()
 			} { text_y = 0 }
 		end)
 
-		assert.are.equal("Placeholder", utility.type(instance.forms[1].elements[1].def.y))
+		assert.are.equal("Placeholder", types.get(instance.forms[1].elements[1].def.y))
 		assert.are.equal("Hello!", instance.forms[1].elements[1].def.text)
 	end)
 
 	describe("get", function()
 		it("returns a formspec by name from the instance", function()
 			assert.are.equal("manager_spec", instance:get("manager_spec").name)
-			assert.are.equal("Form", utility.type(instance:get("manager_spec")))
+			assert.are.equal("Form", types.get(instance:get("manager_spec")))
 			assert.falsy(instance:get("invalid"))
 		end)
 	end)

@@ -1,13 +1,16 @@
-local utility = import("utility.lua")
+local ErrorBuilder = import("errors.lua")
+local types = import("types.lua")
+local tables = import("tables.lua")
+local strings = import("strings.lua")
 local Placeholder = import("placeholder.lua")
 
 ---------------------
 -- Variation Class --
 ---------------------
 
-local Variation = utility.make_class("Variation")
+local Variation = types.type("Variation")
 
-local new_err = utility.ErrorBuilder:new("Variation:new")
+local new_err = ErrorBuilder:new("Variation:new")
 -- Creates a new skeleton instance of the variation.
 function Variation:new(parent, name, fields, options, child_elements)
 	if options and options.contains and not options.contains.environment_namespace then
@@ -24,12 +27,12 @@ function Variation:new(parent, name, fields, options, child_elements)
 	}
 	setmetatable(instance, Variation)
 
-	if utility.DEBUG then
-		utility.enforce_types({"FormspecManager", "string", "table", "table?", "table?"},
+	if DEBUG then
+		types.force({"FormspecManager", "string", "table", "table?", "table?"},
 			parent, name, fields, options, child_elements)
 
 		if options then
-			table.constrain(options, {
+			types.constrain(options, {
 				{"contains", "table", required = false},
 				{"render_name", "string|function", required = false},
 				{"render_append", "string|function", required = false},
@@ -38,14 +41,14 @@ function Variation:new(parent, name, fields, options, child_elements)
 			})
 
 			if options.receive_fields then
-				table.constrain(options.receive_fields, {
+				types.constrain(options.receive_fields, {
 					{"callback", "string|function"},
 					{"pass_field", "boolean", required = false}
 				})
 			end
 
 			if options.contains then
-				table.constrain(options.contains, {
+				types.constrain(options.contains, {
 					{"validate", "string|function"},
 					{"environment", "table|function", required = false},
 					{"environment_namespace", "string", required = false},
@@ -79,7 +82,7 @@ end
 
 -- Duplicates and populates a skeleton instance with an arbitrary definition, returning the newly created duplicate.
 function Variation:populate_new(def, items)
-	if utility.DEBUG then utility.enforce_types({"table", "table?"}, def, items) end
+	if DEBUG then types.force({"table", "table?"}, def, items) end
 	local instance = Variation:new(self.parent, self.name, self.fields, self.options)
 	instance.def = def
 	instance.generated_def = {}
@@ -124,9 +127,9 @@ function Variation:__call(def)
 		end
 
 		return function(items)
-			if utility.DEBUG then
+			if DEBUG then
 				if type(self.options.contains.validate) == "string" then
-					utility.enforce_array(items, self.options.contains.validate)
+					types.force_array(items, self.options.contains.validate)
 				else
 					self.options.contains.validate(self, items)
 				end
@@ -170,7 +173,7 @@ function Variation:map_fields()
 	end
 end
 
-local validate_err = utility.ErrorBuilder:new("Variation:validate")
+local validate_err = ErrorBuilder:new("Variation:validate")
 -- Validates a definition table to variation constraints. Must be called after map_fields.
 function Variation:validate()
 	for index, field in pairs(self.fields) do
@@ -187,7 +190,7 @@ function Variation:validate()
 		end
 
 		-- if the value is a function or Placeholder, we can just ignore it
-		if not utility.check_type(def_field, "function|Placeholder") then
+		if not types.check(def_field, "function|Placeholder") then
 			-- if the value of the data stored in the definition field does not match the expected type, throw an error
 			if def_field ~= nil and type(def_field) ~= field[2] then
 				validate_err:throw("%s property '%s' must be a %s (found %s)", self.name, field[1], field[2], type(def_field))
@@ -196,7 +199,7 @@ function Variation:validate()
 			-- if the variation requires a specific value, check it and throw an error if it isn't satisfied
 			if field[3] and def_field ~= field[3] then
 				validate_err:throw("%s property '%s' must be a %s with value %s (found %s with value %s)", self.name, field[1],
-					field[2], dump(field[3]), type(def_field), dump(def_field))
+					field[2], tables.dump(field[3]), type(def_field), tables.dump(def_field))
 			end
 		end
 	end
@@ -219,12 +222,12 @@ local evaluate_env = {
 local function_call_env = {}
 setmetatable(evaluate_env, { __index = _G })
 setmetatable(function_call_env, { __index = _G })
-local evaluate_err = utility.ErrorBuilder:new("Variation:evaluate")
+local evaluate_err = ErrorBuilder:new("Variation:evaluate")
 -- Takes the index of a field in self.fields and returns the corresponding value from the definition. If the value is a
 -- placeholder or function the value is extracted and checked for validity. If the value is nil and the field is to be
 -- generated, a new ID is fetched from the parent form. An error is thrown if anything is invalid.
 function Variation:evaluate(form, field_index)
-	if utility.DEBUG then utility.enforce_types({"Form", "number"}, form, field_index) end
+	if DEBUG then types.force({"Form", "number"}, form, field_index) end
 
 	local field_def = self.fields[field_index]
 	local value = self.def[self.field_map[field_index]]
@@ -232,7 +235,7 @@ function Variation:evaluate(form, field_index)
 	function_call_env.model = form.model
 
 	-- if the value is a placeholder, evaluate it until it isn't
-	while utility.type(value) == "Placeholder" do
+	while types.get(value) == "Placeholder" do
 		value = Placeholder.evaluate(evaluate_env, value, function_call_env)
 	end
 
@@ -256,7 +259,7 @@ function Variation:evaluate(form, field_index)
 	-- if a specific value is required, check it and throw an error if it isn't satisfied
 	if field_def[3] and value ~= field_def[3] then
 		evaluate_err:throw("%s property '%s' evaluated to a %s with value %s but the property requires a %s with value %s",
-			self.name, field_def[1], type(value), dump(value), field_def[2], field_def[3])
+			self.name, field_def[1], type(value), tables.dump(value), field_def[2], field_def[3])
 	end
 
 	if value == nil then return ""
@@ -266,7 +269,7 @@ end
 -- Takes a field name and returns the corresponding value from the definition. Returns nil, false if the field doesn't
 -- exist. If it exists, evaluate_by_name returns the value, true.
 function Variation:evaluate_by_name(form, field_name)
-	if utility.DEBUG then utility.enforce_types({"Form", "string"}, form, field_name) end
+	if DEBUG then types.force({"Form", "string"}, form, field_name) end
 
 	for index, field in pairs(self.fields) do
 		if field[1] == field_name then
@@ -277,10 +280,10 @@ function Variation:evaluate_by_name(form, field_name)
 	return nil, false
 end
 
-local render_err = utility.ErrorBuilder:new("Variation:render")
+local render_err = ErrorBuilder:new("Variation:render")
 -- Renders a variation given a form as context.
 function Variation:render(form)
-	if utility.DEBUG then utility.enforce_types({"Form"}, form) end
+	if DEBUG then types.force({"Form"}, form) end
 
 	-- Obey visibility control.
 	if self.def._if and not form.model:_evaluate(self.def._if) then
@@ -316,14 +319,14 @@ function Variation:render(form)
 	if self.options then
 		-- if a custom render name is defined, evaluate it
 		if self.options.render_name then
-			name = utility.evaluate_string(self.options.render_name, function(value)
+			name = strings.evaluate(self.options.render_name, function(value)
 				render_err:throw("%s render_name function must return a string (found %s)", self.name, type(value))
 			end, self)
 		end
 
 		-- if a string or function is defined to be appended, evaluate it
 		if self.options.render_append then
-			append = utility.evaluate_string(self.options.render_append, function(value)
+			append = strings.evaluate(self.options.render_append, function(value)
 				render_err:throw("%s render_append function must return a string (found %s)", self.name, type(value))
 			end, self)
 		end
@@ -339,7 +342,7 @@ end
 
 -- Handle received fields.
 function Variation:receive_fields(form, player, field)
-	if utility.DEBUG then utility.enforce_types({"Form"}, form) end
+	if DEBUG then types.force({"Form"}, form) end
 
 	if self.options and self.options.receive_fields then
 		if type(self.options.receive_fields.callback) == "function" then

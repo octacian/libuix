@@ -1,4 +1,5 @@
-local utility = import("utility.lua")
+local ErrorBuilder = import("errors.lua")
+local types = import("types.lua")
 
 -----------------------
 -- Placeholder Class --
@@ -53,7 +54,7 @@ local function new_index(name, value)
 	return instance
 end
 
-local new_listener_err = utility.ErrorBuilder:new("Placeholder.new_listener")
+local new_listener_err = ErrorBuilder:new("Placeholder.new_listener")
 -- Modifies an arbitrary environment to listen for index and newindex events..
 local function new_listener(env)
 	setmetatable(env, {
@@ -67,7 +68,7 @@ local function new_listener(env)
 	})
 end
 
-local set_err = utility.ErrorBuilder:new("Placeholder.set", 2)
+local set_err = ErrorBuilder:new("Placeholder.set", 2)
 -- Uses a placeholder as a key to set a value in an arbitrary environment table.
 local function set(env, obj, value)
 	local key = ""
@@ -90,17 +91,17 @@ local function set(env, obj, value)
 	set_err:throw("attempt to index environment key '%s' (a nil value)", key:sub(1, -2))
 end
 
-local evaluate_err = utility.ErrorBuilder:new("Placeholder.evaluate")
+local evaluate_err = ErrorBuilder:new("Placeholder.evaluate")
 -- Evaluates a placeholder down to a raw value given an arbitrary environment table.
 local function evaluate(env, obj, func_env, previous_env, previous_obj, global_env, global_obj, blame_level)
-	if utility.DEBUG then utility.enforce_types({"table|function|number|string|userdata?", "Placeholder"}, env, obj) end
+	if DEBUG then types.force({"table|function|number|string|userdata?", "Placeholder"}, env, obj) end
 	if not global_env then global_env = env end
 	if not global_obj then global_obj = obj end
 	if not blame_level then blame_level = 2 end
 	evaluate_err.level = blame_level
 
 	local function check_modifier(value)
-		if utility.type(value) == "Placeholder" then
+		if types.get(value) == "Placeholder" then
 			return evaluate(global_env, value, func_env)
 		else return value end
 	end
@@ -127,7 +128,7 @@ local function evaluate(env, obj, func_env, previous_env, previous_obj, global_e
 	elseif event.type == "call" then
 		-- Check for placeholder arguments
 		for key, arg in pairs(event.arg) do
-			if utility.type(arg) == "Placeholder" then
+			if types.get(arg) == "Placeholder" then
 				event.arg[key] = evaluate(global_env, arg, func_env)
 			end
 		end
@@ -214,7 +215,7 @@ local function register_math_op(name, error_desc)
 	mt["__" .. name] = function(left, right)
 		local placeholder = left
 		local value = right
-		if utility.type(placeholder) ~= "Placeholder" then
+		if types.get(placeholder) ~= "Placeholder" then
 			placeholder = right
 			value = left
 		end
@@ -238,7 +239,7 @@ register_math_op("concat", "concatenate")
 
 -- Registers a method to record equality check.
 local function register_equality_op(name)
-	local equality_op_err = utility.ErrorBuilder:new("Placeholder:__" .. name)
+	local equality_op_err = ErrorBuilder:new("Placeholder:__" .. name)
 	mt["__" .. name] = function(left, right)
 		equality_op_err:throw("comparison operators are not allowed, use 'is.%s()' instead", name)
 	end

@@ -14,9 +14,9 @@ read_globals = {
 
 	-- Builtin
 	"vector", "ItemStack",
-	"dump", "DIR_DELIM", "VoxelArea", "Settings",
+	"DIR_DELIM", "VoxelArea", "Settings",
 
-	"libuix", "import", "ui",
+	"libuix", "import", "ui", "UNIT_TEST", "DEBUG",
 
 	-- libuix operator replacement functions
 	"eq", "ne", "lt", "gt", "le", "ge", "land", "lor", "lnot"

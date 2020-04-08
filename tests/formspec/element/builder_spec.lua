@@ -4,19 +4,20 @@ _G.modpath = "."
 local form = require("tests/mock").Form:new()
 local FormspecManager = require("tests/mock").FormspecManager
 local Builder = require("formspec/element/builder")
-local utility = require("utility")
+local tables = require("tables")
+local types = require("types")
 
 describe("Builder", function()
 	local instance = Builder:new(FormspecManager:new("builder_spec"))
 
 	describe("add", function()
 		it("adds a generic element to the builder", function()
-			assert.are.equal(0, table.count(instance.elements))
+			assert.are.equal(0, tables.count(instance.elements))
 			instance:add("builder_spec", false, false, {
 				{ "x", "number" },
 				{ "name", "string" }
 			})
-			assert.are.equal(1, table.count(instance.elements))
+			assert.are.equal(1, tables.count(instance.elements))
 			assert.are.equal("builder_spec[20;bork]", instance.elements.builder_spec({ x = 20, name = "bork" }):render(form))
 		end)
 
@@ -35,7 +36,7 @@ describe("Builder", function()
 					builder:add("item", false, false, { "label", "string" })
 				end
 			})
-			assert.are.equal("Variation", utility.type(instance.elements.child_elements_spec.child_elements.item))
+			assert.are.equal("Variation", types.get(instance.elements.child_elements_spec.child_elements.item))
 		end)
 
 		it("can expand a set of special field types", function()

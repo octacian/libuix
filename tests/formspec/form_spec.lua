@@ -5,7 +5,7 @@ _G.minetest = {}
 local manager = require("tests/mock").FormspecManager:new("form_spec")
 manager.parent = {modname = "form_spec"}
 
-require("utility")
+local tables = require("tables")
 local model = require("formspec/model"):new({})
 local Form = require("formspec/form")
 
@@ -86,9 +86,9 @@ describe("Form", function()
 			}
 			setmetatable(skeleton, {__class_name = "Variation"})
 
-			local one = table.copy(skeleton)
+			local one = tables.copy(skeleton)
 			one.def.name = "one"
-			local two = table.copy(skeleton)
+			local two = tables.copy(skeleton)
 			two.def.name = "two"
 
 			local ReceiveFields = Form:new(manager, "form_receive_fields", {w = 5, h = 10}, {one, two}, model)
